@@ -1,0 +1,56 @@
+services:
+
+  ##################
+  #### postgres ####
+  ##################
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin
+    restart: always
+    networks:
+        - ory-bridge
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@pgadmin.com
+      PGADMIN_DEFAULT_PASSWORD: Kennwort1
+    ports:
+      - "5050:80"
+    depends_on:
+      - postgres
+    volumes:
+      - pgadmin-data:/var/lib/pgadmin
+
+  postgres:
+    image: postgres:15
+    container_name: postgres
+    restart: always
+    networks:
+        - ory-bridge
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: Kennwort1
+      POSTGRES_DB: hydra # name of data base !!
+    volumes:
+      - hydra-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+
+  ory-hydra:
+    image: oryd/hydra:v1.10.6
+    command: serve all
+    networks:
+      - ory-bridge
+    ports:
+      - "5444:4444"
+      - "5445:4445"
+    environment:
+      URLS_SELF_ISSUER: https://localhost:5444/
+      URLS_CONSENT: http://localhost:9020/consent
+      URLS_LOGIN: http://localhost:9020/login
+
+
+volumes:
+  postgres-data:
+  hydra-data:
+
+networks:
+    - ory-bridge
