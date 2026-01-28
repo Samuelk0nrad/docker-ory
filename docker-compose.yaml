@@ -43,14 +43,17 @@ services:
       - "5444:4444"
       - "5445:4445"
     environment:
+      SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET}
+      DSN: ${HYDRA_DSN}
       URLS_SELF_ISSUER: https://localhost:5444/
       URLS_CONSENT: http://localhost:9020/consent
       URLS_LOGIN: http://localhost:9020/login
 
 
 volumes:
-  postgres-data:
+  pgadmin-data:
   hydra-data:
 
 networks:
-    - ory-bridge
+  ory-bridge:
+    driver: bridge
