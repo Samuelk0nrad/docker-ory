@@ -1,5 +1,4 @@
 services:
-
   ##################
   #### postgres ####
   ##################
@@ -40,14 +39,21 @@ services:
       KRATOS_DB: kratos
     volumes:
       - hydra-data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD", "pg_isready -U admin"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+      start_period: 5s
 
   ory-hydra-db-migration:
     image: oryd/hydra:v1.10.6
     depends_on:
-      - postgres
+    depends_on:
+      db:
+        condition: service_healthy
     command: migrate sql --yes ${HYDRA_DSN}
     networks:
       - ory-bridge
@@ -60,6 +66,9 @@ services:
     ports:
       - "5444:4444"
       - "5445:4445"
+    depends_on:
+      ory-hydra-db-migration:
+        condition: service_completed_successfully
     environment:
       SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET}
       DSN: ${HYDRA_DSN}
