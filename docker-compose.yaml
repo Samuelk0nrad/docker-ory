@@ -20,7 +20,9 @@ services:
       - pgadmin-data:/var/lib/pgadmin
 
   postgres:
-    image: postgres:15
+    build:
+      context: ./postgres-db/
+      dockerfile: Dockerfile
     container_name: postgres
     restart: always
     networks:
@@ -28,11 +30,27 @@ services:
     environment:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: Kennwort1
-      POSTGRES_DB: hydra # name of data base !!
+
+      HYDRA_USER: hydra
+      HYDRA_PASS: Kennwort1
+      HYDRA_DB: hydra
+
+      KRATOS_USER: kratos
+      KRATOS_PASS: Kennwort1
+      KRATOS_DB: kratos
     volumes:
       - hydra-data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     ports:
       - "5432:5432"
+
+  ory-hydra-db-migration:
+    image: oryd/hydra:v1.10.6
+    depends_on:
+      - postgres
+    command: migrate sql --yes ${HYDRA_DSN}
+    networks:
+      - ory-bridge
 
   ory-hydra:
     image: oryd/hydra:v1.10.6
@@ -49,10 +67,21 @@ services:
       URLS_CONSENT: http://localhost:9020/consent
       URLS_LOGIN: http://localhost:9020/login
 
+  ory-kratos:
+    image: oryd/kratos:v25.4.0
+    command: serve all --config /config/kratos/config.yaml
+    networks:
+      - ory-bridge
+    environment:
+      DSN: ${KRATOS_DSN}
+      SECRETS_DEFAULT: ${KRATOS_SYSTEM_SECRET}
+    volumes:
+      - ./kratos-config:/config/kratos
 
 volumes:
   pgadmin-data:
   hydra-data:
+  kratos_data:
 
 networks:
   ory-bridge:
