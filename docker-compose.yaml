@@ -42,17 +42,16 @@ services:
     ports:
       - "5432:5432"
     healthcheck:
-      test: ["CMD", "pg_isready -U admin"]
+      test: ["CMD-SHELL", "pg_isready -U admin -d postgres"]
       interval: 5s
       timeout: 5s
-      retries: 5
-      start_period: 5s
+      retries: 20
+      start_period: 10s
 
   ory-hydra-db-migration:
     image: oryd/hydra:v1.10.6
     depends_on:
-    depends_on:
-      db:
+      postgres:
         condition: service_healthy
     command: migrate sql --yes ${HYDRA_DSN}
     networks:
