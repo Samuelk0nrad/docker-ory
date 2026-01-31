@@ -1,0 +1,44 @@
+session:
+  lifespan: 720h # 30 days
+  cookie:
+    name: ory_kratos_session
+
+
+identity:
+  default_schema_id: default
+  schemas:
+    - id: default
+      url: file:///etc/config/kratos/identity.schema.json
+
+serve:
+  public:
+    base_url: http://localhost:5545
+  admin:
+    base_url: http://kratos:4434
+
+selfservice:
+  default_browser_return_url: http://127.0.0.1:3000/
+  allowed_return_urls:
+    - http://127.0.0.1:3000/
+    - http://127.0.0.1:3000/auth/hydra/login
+
+  flows:
+    login:
+      ui_url: http://localhost:3000/login
+    registration:
+      ui_url: http://localhost:3000/register
+    settings:
+      ui_url: http://localhost:3000/settings
+    recovery:
+      enabled: true
+      ui_url: http://localhost:3000/recovery
+    verification:
+      enabled: true
+      ui_url: http://localhost:3000/verify
+
+  methods:
+    password:
+      enabled: true
+
+log:
+  level: debug

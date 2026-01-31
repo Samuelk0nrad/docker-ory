@@ -75,16 +75,45 @@ services:
       URLS_CONSENT: http://localhost:9020/consent
       URLS_LOGIN: http://localhost:9020/login
 
-  ory-kratos:
+  ory-kratos-db-migration:
     image: oryd/kratos:v25.4.0
-    command: serve all --config /config/kratos/config.yaml
+    command: -c /etc/config/kratos/config.yaml migrate sql -e -y
+    depends_on:
+      postgres:
+        condition: service_healthy
     networks:
       - ory-bridge
     environment:
       DSN: ${KRATOS_DSN}
       SECRETS_DEFAULT: ${KRATOS_SYSTEM_SECRET}
     volumes:
-      - ./kratos-config:/config/kratos
+      - ./kratos-config:/etc/config/kratos
+
+  ory-kratos:
+    image: oryd/kratos:v25.4.0
+    command: serve --config /etc/config/kratos/config.yaml
+    depends_on:
+      ory-kratos-db-migration:
+        condition: service_completed_successfully
+    ports:
+      - "5544:4434"
+      - "5545:4433"
+      - "3000:3000"
+    networks:
+      - ory-bridge
+    environment:
+      DSN: ${KRATOS_DSN}
+      SECRETS_DEFAULT: ${KRATOS_SYSTEM_SECRET}
+    volumes:
+      - ./kratos-config:/etc/config/kratos
+
+  mailslurper:
+    image: oryd/mailslurper:latest-smtps
+    ports:
+      - "4436:4436"
+      - "4437:4437"
+    networks:
+      - ory-bridge
 
 volumes:
   pgadmin-data:
