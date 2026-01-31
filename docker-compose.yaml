@@ -98,7 +98,6 @@ services:
     ports:
       - "5544:4434"
       - "5545:4433"
-      - "3000:3000"
     networks:
       - ory-bridge
     environment:
