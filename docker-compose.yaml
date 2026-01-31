@@ -59,7 +59,7 @@ services:
 
   ory-hydra:
     image: oryd/hydra:v1.10.6
-    command: serve all
+    command: serve all  --dangerous-force-http
     networks:
       - ory-bridge
     ports:
