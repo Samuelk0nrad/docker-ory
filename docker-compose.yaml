@@ -30,12 +30,7 @@ services:
       POSTGRES_USER: admin
       POSTGRES_PASSWORD: Kennwort1
 
-      HYDRA_USER: hydra
-      HYDRA_PASS: Kennwort1
       HYDRA_DB: hydra
-
-      KRATOS_USER: kratos
-      KRATOS_PASS: Kennwort1
       KRATOS_DB: kratos
     volumes:
       - hydra-data:/var/lib/postgresql/data
@@ -48,6 +43,9 @@ services:
       retries: 20
       start_period: 10s
 
+  ##################
+  ####  hydra   ####
+  ##################
   ory-hydra-db-migration:
     image: oryd/hydra:v1.10.6
     depends_on:
@@ -75,6 +73,9 @@ services:
       URLS_CONSENT: http://localhost:9020/consent
       URLS_LOGIN: http://localhost:9020/login
 
+  ##################
+  ####  kratos  ####
+  ##################
   ory-kratos-db-migration:
     image: oryd/kratos:v25.4.0
     command: -c /etc/config/kratos/config.yaml migrate sql -e -y
@@ -106,6 +107,9 @@ services:
     volumes:
       - ./kratos-config:/etc/config/kratos
 
+  ##################
+  ## smtp server  ##
+  ##################
   mailslurper:
     image: oryd/mailslurper:latest-smtps
     ports:
