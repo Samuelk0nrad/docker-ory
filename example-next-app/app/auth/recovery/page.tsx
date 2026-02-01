@@ -1,6 +1,6 @@
 import { Recovery } from "@ory/elements-react/theme"
 import { getRecoveryFlow, OryPageParams } from "@ory/nextjs/app"
-import CustomCardHeader from "@/components/custom-card-header"
+//import CustomCardHeader from "@/components/custom-card-header"
 
 import config from "@/ory.config"
 
@@ -17,7 +17,7 @@ export default async function RecoveryPage(props: OryPageParams) {
       config={config}
       components={{
         Card: {
-          Header: CustomCardHeader,
+          //         Header: CustomCardHeader,
         },
       }}
     />

@@ -1,18 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  //async rewrites() {
-  //  return [
-  //    {
-  //      source: "/self-service/:path*",
-  //      destination: "http://localhost:5545/self-service/:path*"
-  //    },
-  //    {
-  //      source: "/sessions/:path*",
-  //      destination: "http://localhost:5545/sessions/:path*"
-  //    }
-  //  ];
-  //}
+  async rewrites() {
+    return [
+      {
+        source: "/api/.ory/kratos/:path*",
+        destination: "http://localhost:5545/:path*"
+      },
+      {
+        source: "/api/.ory/hydra/:path*",
+        destination: "http://localhost:5545/:path*"
+      }
+    ];
+  }
 };
 
 
