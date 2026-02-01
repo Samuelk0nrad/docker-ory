@@ -1,25 +1,19 @@
-import { Recovery } from "@ory/elements-react/theme"
-import { getRecoveryFlow, OryPageParams } from "@ory/nextjs/app"
-//import CustomCardHeader from "@/components/custom-card-header"
+import { LoginForm } from "@/components/login-form";
 
-import config from "@/ory.config"
-
-export default async function RecoveryPage(props: OryPageParams) {
-  const flow = await getRecoveryFlow(config, props.searchParams)
-
-  if (!flow) {
-    return null
-  }
+export default async function RecoveryPage({
+  searchParams,
+}: {
+  searchParams: {
+    flow?: string;
+  };
+}) {
+  const { flow: flowId } = await searchParams;
 
   return (
-    <Recovery
-      flow={flow}
-      config={config}
-      components={{
-        Card: {
-          //         Header: CustomCardHeader,
-        },
-      }}
-    />
-  )
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <LoginForm flowId={flowId} />
+      </div>
+    </div>
+  );
 }
