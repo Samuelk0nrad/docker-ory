@@ -3,7 +3,6 @@ session:
   cookie:
     name: ory_kratos_session
 
-
 identity:
   default_schema_id: default
   schemas:
@@ -39,6 +38,15 @@ selfservice:
   methods:
     password:
       enabled: true
+    link:
+      enabled: true
+    code:
+      enabled: true
+courier:
+  smtp:
+    connection_uri: smtps://mailslurper:1025/?skip_ssl_verify=true
+    from_address: no-reply@mailslurper.local
+    from_name: World Game
 
 log:
   level: debug
