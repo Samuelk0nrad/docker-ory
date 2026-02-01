@@ -79,6 +79,7 @@ export function LoginForm({ flowId }: { flowId?: string }) {
           if (node.attributes.name === "identifier" && node.messages.length > 0) {
             setEmailError(node.messages[0].text);
           }
+
           if (node.attributes.name === "password" && node.messages.length > 0) {
             setPasswordError(node.messages[0].text);
           }
@@ -89,6 +90,7 @@ export function LoginForm({ flowId }: { flowId?: string }) {
       setMessage("an error occurred, please try again later")
     }
   }
+
   const validateInput = async (): Promise<boolean> => {
     if (!flow) {
       try {
