@@ -1,22 +1,19 @@
-import { Registration } from "@ory/elements-react/theme"
-import { getRegistrationFlow, OryPageParams } from "@ory/nextjs/app"
+import { SignupForm } from "@/components/signup-form";
 
-import config from "@/ory.config"
-
-export default async function RegistrationPage(props: OryPageParams) {
-  const flow = await getRegistrationFlow(config, props.searchParams)
-
-  if (!flow) {
-    return null
-  }
+export default async function RegistrationPage({
+  searchParams,
+}: {
+  searchParams: {
+    flow?: string;
+  };
+}) {
+  const { flow: flowId } = await searchParams;
 
   return (
-    <Registration
-      flow={flow}
-      config={config}
-      components={{
-        Card: {},
-      }}
-    />
-  )
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <SignupForm flowId={flowId} />
+      </div>
+    </div>
+  );
 }

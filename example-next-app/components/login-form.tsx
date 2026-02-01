@@ -1,47 +1,47 @@
-'use client'
+"use client";
 
-import { Button } from "@/components/ui/button"
+import { Button } from "@/components/ui/button";
 import {
   Card,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
-} from "@/components/ui/card"
+} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
   FieldGroup,
   FieldLabel,
-} from "@/components/ui/field"
-import { Input } from "@/components/ui/input"
-import { getCsrfToken } from "@/lib/utils"
-import { kratos, LoginFlowPayload } from "@/ory/kratos"
-import { LoginFlow } from "@ory/client"
-import { AxiosError } from "axios"
-import { useEffect, useState } from "react"
-import { Spinner } from "./ui/spinner"
-import { Label } from "./ui/label"
-import { ResponseUI } from "@/ory/kratos/types"
+} from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
+import { getCsrfToken } from "@/lib/utils";
+import { kratos, LoginFlowPayload } from "@/ory/kratos";
+import { LoginFlow } from "@ory/client";
+import { AxiosError } from "axios";
+import { useEffect, useState } from "react";
+import { Spinner } from "./ui/spinner";
+import { Label } from "./ui/label";
+import { ResponseUI } from "@/ory/kratos/types";
 
 export function LoginForm({ flowId }: { flowId?: string }) {
-  const [flow, setFlow] = useState<LoginFlow>()
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
+  const [flow, setFlow] = useState<LoginFlow>();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
 
-  const [message, setMessage] = useState("")
-  const [emailError, setEmailError] = useState("")
-  const [passwordError, setPasswordError] = useState("")
+  const [message, setMessage] = useState("");
+  const [emailError, setEmailError] = useState("");
+  const [passwordError, setPasswordError] = useState("");
 
-  const [isLoading, setIsLoading] = useState(false)
+  const [isLoading, setIsLoading] = useState(false);
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
-    e?.preventDefault()
+    e?.preventDefault();
 
-    setIsLoading(true)
-    const isValid = await validateInput()
+    setIsLoading(true);
+    const isValid = await validateInput();
     if (!isValid) {
-      setIsLoading(false)
+      setIsLoading(false);
       return;
     }
 
@@ -49,34 +49,37 @@ export function LoginForm({ flowId }: { flowId?: string }) {
       identifier: email,
       password: password,
       csrf_token: getCsrfToken(flow),
-      method: "password"
-    }
+      method: "password",
+    };
 
     try {
       await kratos.updateLoginFlow({
         flow: flow!.id,
-        updateLoginFlowBody: body
-      })
-      setMessage("")
+        updateLoginFlowBody: body,
+      });
+      setMessage("");
     } catch (e: unknown) {
-      handleLoginError(e)
+      handleLoginError(e);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleLoginError = (error: unknown) => {
     if (error instanceof AxiosError) {
       const responseUi: ResponseUI = error.response?.data?.ui;
       if (responseUi.messages?.length > 0) {
         const message = responseUi.messages[0];
-        console.error(responseUi.messages[0].text)
+        console.error(responseUi.messages[0].text);
         setMessage(message.text);
       }
       if (responseUi.nodes?.length > 0) {
         const nodes = responseUi.nodes;
         nodes.forEach((node: any) => {
-          if (node.attributes.name === "identifier" && node.messages.length > 0) {
+          if (
+            node.attributes.name === "identifier" &&
+            node.messages.length > 0
+          ) {
             setEmailError(node.messages[0].text);
           }
 
@@ -86,54 +89,60 @@ export function LoginForm({ flowId }: { flowId?: string }) {
         });
       }
     } else {
-      console.error(error)
-      setMessage("an error occurred, please try again later")
+      console.error(error);
+      setMessage("an error occurred, please try again later");
     }
-  }
+  };
 
   const validateInput = async (): Promise<boolean> => {
     if (!flow) {
       try {
-        await getLoginFlow()
+        await getLoginFlow();
       } catch (e: unknown) {
-        console.error("Failed to get login flow", e)
-        setMessage("an error occurred, please try again later")
+        console.error("Failed to get login flow", e);
+        setMessage("an error occurred, please try again later");
         return false;
       }
     } else {
-      setMessage("")
+      setMessage("");
     }
 
     if (email === "") {
-      setEmailError("Email is required")
+      setEmailError("Email is required");
       return false;
     } else {
-      setEmailError("")
+      setEmailError("");
     }
     if (password === "") {
-      setPasswordError("Password is required")
+      setPasswordError("Password is required");
       return false;
     } else {
-      setPasswordError("")
+      setPasswordError("");
     }
     return true;
-  }
+  };
 
   const getLoginFlow = async () => {
-    if (!flowId) {
-      const { data } = await kratos.createBrowserLoginFlow()
-      setFlow(data)
-      console.log(data)
-    } else {
-      const { data } = await kratos.getLoginFlow({ id: flowId })
-      setFlow(data)
-      console.log(data)
+    try {
+      if (!flowId) {
+        const { data } = await kratos.createBrowserLoginFlow();
+        setFlow(data);
+        console.log(data);
+      } else {
+        const { data } = await kratos.getLoginFlow({ id: flowId });
+        setFlow(data);
+        console.log(data);
+      }
+      setMessage("");
+    } catch (e) {
+      console.error("Failed to get registration flow", e);
+      setMessage("an error occurred, please try again later");
     }
-  }
+  };
 
   useEffect(() => {
-    getLoginFlow()
-  }, [flowId])
+    getLoginFlow();
+  }, [flowId]);
 
   return (
     <div className={"flex flex-col gap-6"}>
@@ -154,7 +163,10 @@ export function LoginForm({ flowId }: { flowId?: string }) {
                   type="email"
                   placeholder="max@mustermann.com"
                   required
-                  value={email} onChange={(event) => { setEmail(event.target.value) }}
+                  value={email}
+                  onChange={(event) => {
+                    setEmail(event.target.value);
+                  }}
                   onBlur={validateInput}
                 />
                 <span className={"text-red-500"}>{emailError}</span>
@@ -163,23 +175,35 @@ export function LoginForm({ flowId }: { flowId?: string }) {
                 <div className="flex items-center">
                   <FieldLabel htmlFor="password">Password</FieldLabel>
                   <a
-                    href="#"
+                    href="/auth/recovery"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Forgot your password?
                   </a>
                 </div>
-                <Input id="password" type="password" required value={password} onChange={(event) => { setPassword(event.target.value) }} onBlur={validateInput} />
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(event) => {
+                    setPassword(event.target.value);
+                  }}
+                  onBlur={validateInput}
+                />
                 <span className={"text-red-500"}>{passwordError}</span>
               </Field>
               <Field>
-                <Button type="submit" disabled={isLoading}>{isLoading ? <Spinner /> : "Login"}</Button>
-                <Label className={"text-red-500"}>{message}</Label>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Spinner /> : "Login"}
+                </Button>
+                {message && <Label className={"text-red-500"}>{message}</Label>}
                 <Button variant="outline" type="button">
                   Login with Google
                 </Button>
                 <FieldDescription className="text-center">
-                  Don&apos;t have an account? <a href="#">Sign up</a>
+                  Don&apos;t have an account?{" "}
+                  <a href="/auth/registration">Sign up</a>
                 </FieldDescription>
               </Field>
             </FieldGroup>
@@ -187,5 +211,5 @@ export function LoginForm({ flowId }: { flowId?: string }) {
         </CardContent>
       </Card>
     </div>
-  )
+  );
 }
