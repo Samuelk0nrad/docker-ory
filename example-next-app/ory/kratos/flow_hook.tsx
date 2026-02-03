@@ -8,28 +8,73 @@ export function useAuthFlow(
   flowType: SelfServiceFlow = SelfServiceFlow.Registration
 ) {
   const flow = flowType;
-  const [message, setMessage] = useState<{ text: string; type: string }[]>([]);
-  const [data, setData] = useState<any>();
-  const [messages, setMessages] = useState<any>();
+  const [data, setData] = useState<any>({});
+  const [messages, setMessages] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
 
   const startFlow = async () => {
-    if (flowId) {
-      await flow.getFlow(flowId);
-    } else {
-      await flow.createFlow();
+    try {
+      if (flowId) {
+        await flow.getFlow(flowId);
+      } else {
+        await flow.createFlow();
+      }
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.data.error) {
+        console.log(error.response?.data);
+        updateMessages('general', {
+          text: error.response?.data.error.message,
+          type: 'error',
+        });
+      } else {
+        updateMessages('general', {
+          text: 'an error occurred please try again later',
+          type: 'error',
+        });
+      }
     }
   };
 
-  const updateData = (key: string, value: any) => {
-    setData({ ...data, [key]: value });
+  const setNestedValue = (
+    obj: Record<string, any>,
+    path: string,
+    value: any
+  ) => {
+    const keys = path.split('.');
+    const result = { ...obj };
+    let current = result;
+
+    keys.forEach((keyPart, index) => {
+      if (index === keys.length - 1) {
+        current[keyPart] = value;
+      } else {
+        current[keyPart] = { ...(current[keyPart] ?? {}) };
+        current = current[keyPart];
+      }
+    });
+
+    return result;
   };
 
-  const updateFlow = async (flowData: any) => {
+  const normalizeMessageKey = (key: string) =>
+    key.startsWith('traits.') ? key.replace('traits.', '') : key;
+
+  const updateData = (key: string, value: any) => {
+    const updated = key.includes('.')
+      ? setNestedValue(data, key, value)
+      : { ...data, [key]: value };
+    setData(updated);
+  };
+
+  const updateMessages = (key: string, value: any) => {
+    setMessages({ ...messages, [key]: value });
+  };
+
+  const updateFlow = async () => {
     setIsLoading(true);
     try {
       if (flow) {
-        const newFlow = await flow.updateFlow(flowData);
+        const newFlow = await flow.updateFlow(data);
         flow.flow = newFlow;
       } else {
         throw new Error('Flow not initialized');
@@ -38,27 +83,27 @@ export function useAuthFlow(
       if (error instanceof AxiosError) {
         const responseUi: ResponseUI = error.response?.data?.ui;
         if (responseUi?.messages?.length > 0) {
-          setMessage(
+          updateMessages(
+            'general',
             responseUi.messages.map((msg) => ({
               text: msg.text,
               type: msg.type,
-            }))
+            }))[0]
           );
         }
         if (responseUi.nodes?.length > 0) {
           const nodes = responseUi.nodes;
           nodes.forEach((node: any) => {
-            setMessages({ ...messages, [node.attributes.name]: node.messages });
+            const normalizedKey = normalizeMessageKey(node.attributes.name);
+            setMessages({ ...messages, [normalizedKey]: node.messages });
           });
         }
       } else {
         console.error(error);
-        setMessage([
-          {
-            text: 'an error occurred, please try again later',
-            type: 'error',
-          },
-        ]);
+        updateMessages('general', {
+          text: 'an error occurred, please try again later',
+          type: 'error',
+        });
       }
     } finally {
       setIsLoading(false);
@@ -72,13 +117,17 @@ export function useAuthFlow(
     fetchFlow();
   }, [flowId, flowType]);
 
+  const setMethod = (method: string) => {
+    updateData('method', method);
+  };
+
   return {
     flow,
-    message,
     data,
     messages,
     isLoading,
     startFlow,
+    setMethod,
     setData: updateData,
     updateFlow,
   };

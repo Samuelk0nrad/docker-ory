@@ -15,157 +15,23 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { kratos, RegistrationFlowPayload, ResponseUI } from '@/ory/kratos';
-import { AxiosError } from 'axios';
-import { LoginFlow } from '@ory/client';
-import { useEffect, useState } from 'react';
-import { getCsrfToken } from '@/lib/utils';
 import { Label } from '@radix-ui/react-label';
 import { Spinner } from './ui/spinner';
 import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { useEffect } from 'react';
 
 export function SignupForm({ flowId }: { flowId?: string }) {
-  const [flow, setFlow] = useState<LoginFlow>();
-  const [email, setEmail] = useState('');
-  const [name, setName] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-
-  const [message, setMessage] = useState('');
-  const [emailError, setEmailError] = useState('');
-  const [nameError, setNameError] = useState('');
-  const [passwordError, setPasswordError] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
-
-  const [isLoading, setIsLoading] = useState(false);
-
   const authFlow = useAuthFlow(flowId, SelfServiceFlow.Registration);
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
 
-    setIsLoading(true);
-    const isValid = await validateInput();
-    if (!isValid) {
-      setIsLoading(false);
-      return;
-    }
-
-    const body: RegistrationFlowPayload = {
-      method: 'password',
-      traits: {
-        email: email,
-        name: name,
-      },
-      password: password,
-      csrf_token: getCsrfToken(flow),
-    };
-
-    try {
-      await kratos.updateRegistrationFlow({
-        flow: flow!.id,
-        updateRegistrationFlowBody: body,
-      });
-      setMessage('');
-    } catch (e: unknown) {
-      handleRegistrationError(e);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleRegistrationError = (error: unknown) => {
-    if (error instanceof AxiosError) {
-      const responseUi: ResponseUI = error.response?.data?.ui;
-      if (responseUi?.messages?.length > 0) {
-        const message = responseUi.messages[0];
-        console.error(responseUi.messages[0].text);
-        setMessage(message.text);
-      }
-      if (responseUi.nodes?.length > 0) {
-        const nodes = responseUi.nodes;
-        nodes.forEach((node: any) => {
-          if (
-            node.attributes.name === 'identifier' &&
-            node.messages.length > 0
-          ) {
-            setEmailError(node.messages[0].text);
-          }
-          if (node.attributes.name === 'password' && node.messages.length > 0) {
-            setPasswordError(node.messages[0].text);
-          }
-          if (node.attributes.name === 'name' && node.messages.length > 0) {
-            setNameError(node.messages[0].text);
-          }
-        });
-      }
-    } else {
-      console.error(error);
-      setMessage('an error occurred, please try again later');
-    }
-  };
-
-  const validateInput = async (): Promise<boolean> => {
-    if (!flow) {
-      try {
-        await getRegistrationFlow();
-      } catch (e: unknown) {
-        console.error('Failed to get registration flow', e);
-        setMessage('an error occurred, please try again later');
-        return false;
-      }
-    } else {
-      setMessage('');
-    }
-
-    if (email === '') {
-      setEmailError('Email is required');
-      return false;
-    } else {
-      setEmailError('');
-    }
-    if (name === '') {
-      setNameError('Name is required');
-      return false;
-    } else {
-      setNameError('');
-    }
-    if (password === '') {
-      setPasswordError('Password is required');
-      return false;
-    } else {
-      setPasswordError('');
-    }
-    if (password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
-      return false;
-    } else {
-      setConfirmPasswordError('');
-    }
-    return true;
-  };
-
-  const getRegistrationFlow = async () => {
-    try {
-      if (!flowId) {
-        const { data } = await kratos.createBrowserRegistrationFlow();
-        setFlow(data);
-        console.log(data);
-      } else {
-        const { data } = await kratos.getRegistrationFlow({ id: flowId });
-        setFlow(data);
-        console.log(data);
-      }
-      setMessage('');
-    } catch (e) {
-      console.error('Failed to get registration flow', e);
-      setMessage('an error occurred, please try again later');
-    }
+    authFlow.updateFlow();
   };
 
   useEffect(() => {
-    getRegistrationFlow();
+    authFlow.setMethod('password');
   }, [flowId]);
 
   return (
@@ -185,12 +51,22 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="name"
                 type="text"
                 placeholder="John Doe"
-                value={name}
-                onChange={(event) => setName(event.target.value)}
+                value={authFlow.data.traits?.name || ''}
+                onChange={(event) =>
+                  authFlow.setData('traits.name', event.target.value)
+                }
                 required
               />
-              {nameError && (
-                <Label className={'text-red-500'}>{nameError}</Label>
+              {authFlow.messages.name && (
+                <Label
+                  className={
+                    authFlow.messages.name.type === 'error'
+                      ? 'text-red-500'
+                      : ''
+                  }
+                >
+                  {authFlow.messages.name.text}
+                </Label>
               )}
             </Field>
             <Field>
@@ -200,11 +76,21 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
+                value={authFlow.data.traits?.email || ''}
+                onChange={(event) =>
+                  authFlow.setData('traits.email', event.target.value)
+                }
               />
-              {emailError ? (
-                <Label className={'text-red-500'}>{emailError}</Label>
+              {authFlow.messages.email ? (
+                <Label
+                  className={
+                    authFlow.messages.email.type === 'error'
+                      ? 'text-red-500'
+                      : ''
+                  }
+                >
+                  {authFlow.messages.email.text}
+                </Label>
               ) : (
                 <FieldDescription>
                   We&apos;ll use this to contact you. We will not share your
@@ -218,11 +104,21 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="password"
                 type="password"
                 required
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
+                value={authFlow.data.password || ''}
+                onChange={(event) =>
+                  authFlow.setData('password', event.target.value)
+                }
               />
-              {passwordError ? (
-                <Label className={'text-red-500'}>{passwordError}</Label>
+              {authFlow.messages.password ? (
+                <Label
+                  className={
+                    authFlow.messages.password.type === 'error'
+                      ? 'text-red-500'
+                      : ''
+                  }
+                >
+                  {authFlow.messages.password.text}
+                </Label>
               ) : (
                 <FieldDescription>
                   Must be at least 8 characters long.
@@ -237,23 +133,39 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="confirm-password"
                 type="password"
                 required
-                value={confirmPassword}
-                onChange={(event) => setConfirmPassword(event.target.value)}
+                value={authFlow.data.confirmPassword || ''}
+                onChange={(event) =>
+                  authFlow.setData('confirmPassword', event.target.value)
+                }
               />
-              {confirmPasswordError ? (
-                <Label className={'text-red-500'}>{confirmPasswordError}</Label>
-              ) : (
-                <FieldDescription>
-                  Please confirm your password.
-                </FieldDescription>
+              {authFlow.messages.confirmPassword && (
+                <Label
+                  className={
+                    authFlow.messages.confirmPassword.type === 'error'
+                      ? 'text-red-500'
+                      : ''
+                  }
+                >
+                  {authFlow.messages.confirmPassword.text}
+                </Label>
               )}
             </Field>
             <FieldGroup>
               <Field>
                 <Button type="submit">
-                  {isLoading ? <Spinner /> : 'Create Account'}
+                  {authFlow.isLoading ? <Spinner /> : 'Create Account'}
                 </Button>
-                {message && <Label className={'text-red-500'}>{message}</Label>}
+                {authFlow.messages.general && (
+                  <Label
+                    className={
+                      authFlow.messages.general.type === 'error'
+                        ? 'text-red-500'
+                        : ''
+                    }
+                  >
+                    {authFlow.messages.general.text}
+                  </Label>
+                )}
                 <Button variant="outline" type="button">
                   Sign up with Google
                 </Button>
