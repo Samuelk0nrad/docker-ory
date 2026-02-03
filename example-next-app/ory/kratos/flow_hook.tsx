@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { ResponseUI } from './types';
 import { AxiosError } from 'axios';
+import { getCsrfToken } from '@/lib/utils';
 
 export function useAuthFlow(
   flowId?: string,
@@ -19,6 +20,9 @@ export function useAuthFlow(
       } else {
         await flow.createFlow();
       }
+      const csrf_token = getCsrfToken(flow.flow);
+      console.log('CSRF Token:', csrf_token);
+      updateData('csrf_token', csrf_token);
     } catch (error) {
       if (error instanceof AxiosError && error.response?.data.error) {
         console.log(error.response?.data);
@@ -68,6 +72,7 @@ export function useAuthFlow(
 
   const updateMessages = (key: string, value: any) => {
     setMessages({ ...messages, [key]: value });
+    console.error('Updated messages:', { ...messages, [key]: value });
   };
 
   const updateFlow = async () => {
@@ -80,7 +85,16 @@ export function useAuthFlow(
         throw new Error('Flow not initialized');
       }
     } catch (error) {
-      if (error instanceof AxiosError) {
+      console.log(error);
+      setMessages({
+        ...messages,
+        general: {
+          text: 'an error occurred, please try again later',
+          type: 'error',
+        },
+      });
+      console.log(messages);
+      if (error instanceof AxiosError && error.response?.data?.ui) {
         const responseUi: ResponseUI = error.response?.data?.ui;
         if (responseUi?.messages?.length > 0) {
           updateMessages(
@@ -98,12 +112,6 @@ export function useAuthFlow(
             setMessages({ ...messages, [normalizedKey]: node.messages });
           });
         }
-      } else {
-        console.error(error);
-        updateMessages('general', {
-          text: 'an error occurred, please try again later',
-          type: 'error',
-        });
       }
     } finally {
       setIsLoading(false);
@@ -119,6 +127,7 @@ export function useAuthFlow(
 
   const setMethod = (method: string) => {
     updateData('method', method);
+    console.log(`set method to ${method}`);
   };
 
   return {
@@ -129,6 +138,7 @@ export function useAuthFlow(
     startFlow,
     setMethod,
     setData: updateData,
+    setMessages: updateMessages,
     updateFlow,
   };
 }

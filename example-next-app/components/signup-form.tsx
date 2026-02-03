@@ -32,7 +32,12 @@ export function SignupForm({ flowId }: { flowId?: string }) {
 
   useEffect(() => {
     authFlow.setMethod('password');
+    console.log('set method to password');
   }, [flowId]);
+
+  useEffect(() => {
+    console.log('Messages updated:', authFlow.messages);
+  }, [authFlow.messages]);
 
   return (
     <Card>
@@ -43,7 +48,12 @@ export function SignupForm({ flowId }: { flowId?: string }) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={submitForm}>
+        <form
+          onSubmit={(e) => {
+            e.preventDefault();
+            submitForm(e);
+          }}
+        >
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="name">Full Name</FieldLabel>
