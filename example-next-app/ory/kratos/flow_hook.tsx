@@ -67,12 +67,13 @@ export function useAuthFlow(
     const updated = key.includes('.')
       ? setNestedValue(data, key, value)
       : { ...data, [key]: value };
-    setData(updated);
+    setData((prev: any) => {
+      return { ...prev, ...updated };
+    });
   };
 
   const updateMessages = (key: string, value: any) => {
-    setMessages({ ...messages, [key]: value });
-    console.error('Updated messages:', { ...messages, [key]: value });
+    setMessages((prev: any) => ({ ...prev, [key]: value }));
   };
 
   const updateFlow = async () => {
@@ -86,14 +87,6 @@ export function useAuthFlow(
       }
     } catch (error) {
       console.log(error);
-      setMessages({
-        ...messages,
-        general: {
-          text: 'an error occurred, please try again later',
-          type: 'error',
-        },
-      });
-      console.log(messages);
       if (error instanceof AxiosError && error.response?.data?.ui) {
         const responseUi: ResponseUI = error.response?.data?.ui;
         if (responseUi?.messages?.length > 0) {
@@ -109,7 +102,13 @@ export function useAuthFlow(
           const nodes = responseUi.nodes;
           nodes.forEach((node: any) => {
             const normalizedKey = normalizeMessageKey(node.attributes.name);
-            setMessages({ ...messages, [normalizedKey]: node.messages });
+            setMessages((pres: any) => ({
+              ...pres,
+              [normalizedKey]: {
+                text: node.messages[0]?.text,
+                type: node.messages[0]?.type,
+              },
+            }));
           });
         }
       }

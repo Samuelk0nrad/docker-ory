@@ -27,6 +27,14 @@ export function SignupForm({ flowId }: { flowId?: string }) {
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
 
+    if (authFlow.data.password !== authFlow.data.confirmPassword) {
+      authFlow.setMessages('confirmPassword', {
+        text: 'Passwords do not match',
+        type: 'error',
+      });
+      return;
+    }
+
     authFlow.updateFlow();
   };
 
