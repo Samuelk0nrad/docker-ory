@@ -3,6 +3,7 @@ import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { ResponseUI } from './types';
 import { AxiosError } from 'axios';
 import { getCsrfToken } from '@/lib/utils';
+import { ContinueWith } from '@ory/client';
 
 export function useAuthFlow(
   flowId?: string,
@@ -13,37 +14,30 @@ export function useAuthFlow(
   const [messages, setMessages] = useState<any>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  const startFlow = async () => {
+  async function startFlow(): Promise<boolean> {
+    let res = true;
     try {
       if (flowId) {
         await flow.getFlow(flowId);
       } else {
         await flow.createFlow();
       }
-      const csrf_token = getCsrfToken(flow.flow);
-      console.log('CSRF Token:', csrf_token);
-      updateData('csrf_token', csrf_token);
+      setCsrfToken();
     } catch (error) {
       if (error instanceof AxiosError && error.response?.data.error) {
-        console.log(error.response?.data);
-        updateMessages('general', {
-          text: error.response?.data.error.message,
-          type: 'error',
-        });
+        handleResponse(error.response?.data);
       } else {
         updateMessages('general', {
           text: 'an error occurred please try again later',
           type: 'error',
         });
       }
+      res = false;
     }
-  };
+    return res;
+  }
 
-  const setNestedValue = (
-    obj: Record<string, any>,
-    path: string,
-    value: any
-  ) => {
+  function setNestedValue(obj: Record<string, any>, path: string, value: any) {
     const keys = path.split('.');
     const result = { ...obj };
     let current = result;
@@ -56,72 +50,127 @@ export function useAuthFlow(
         current = current[keyPart];
       }
     });
-
     return result;
-  };
+  }
 
-  const normalizeMessageKey = (key: string) =>
-    key.startsWith('traits.') ? key.replace('traits.', '') : key;
+  function normalizeMessageKey(key: string) {
+    return key.startsWith('traits.') ? key.replace('traits.', '') : key;
+  }
 
-  const updateData = (key: string, value: any) => {
+  function updateData(key: string, value: any) {
     const updated = key.includes('.')
       ? setNestedValue(data, key, value)
       : { ...data, [key]: value };
     setData((prev: any) => {
       return { ...prev, ...updated };
     });
-  };
+  }
 
-  const updateMessages = (key: string, value: any) => {
+  function updateMessages(key: string, value: any) {
     setMessages((prev: any) => ({ ...prev, [key]: value }));
-  };
+  }
 
-  const updateFlow = async () => {
+  async function updateFlow(): Promise<boolean> {
     setIsLoading(true);
+    let res = true;
     try {
       if (flow) {
         const newFlow = await flow.updateFlow(data);
-        console.log(newFlow);
-        if (newFlow?.ui?.nodes) {
-          handleResponse(newFlow.ui);
-        }
+
+        handleResponse(newFlow);
+
         flow.flow = newFlow;
       } else {
         throw new Error('Flow not initialized');
       }
     } catch (error) {
-      console.log(error);
-      if (error instanceof AxiosError && error.response?.data?.ui) {
-        handleResponse(error.response?.data.ui as ResponseUI);
+      if (error instanceof AxiosError && error.response?.data) {
+        handleResponse(error.response?.data);
       }
+      res = false;
     } finally {
       setIsLoading(false);
     }
-  };
+    return res;
+  }
 
-  function handleResponse(responseUi: ResponseUI) {
-    if (responseUi?.messages?.length > 0) {
-      updateMessages(
-        'general',
-        responseUi.messages.map((msg) => ({
-          text: msg.text,
-          type: msg.type,
-        }))[0]
-      );
+  function handleResponse(response: any) {
+    if (response.continue_with) {
+      handleContinueWith(response.continue_with);
     }
-    if (responseUi.nodes?.length > 0) {
-      const nodes = responseUi.nodes;
-      nodes.forEach((node: any) => {
-        const normalizedKey = normalizeMessageKey(node.attributes.name);
-        setMessages((pres: any) => ({
-          ...pres,
-          [normalizedKey]: {
-            text: node.messages[0]?.text,
-            type: node.messages[0]?.type,
-          },
-        }));
+    if (response.redirect_browser_to) {
+      window.location.href = response.redirect_browser_to;
+      return;
+    }
+    if (response.error) {
+      updateMessages('general', {
+        text: response.error.message,
+        type: 'error',
       });
     }
+    if (response.ui) {
+      const responseUi: ResponseUI = response.ui;
+      if (responseUi?.messages?.length > 0) {
+        updateMessages(
+          'general',
+          responseUi.messages.map((msg) => ({
+            text: msg.text,
+            type: msg.type,
+          }))[0]
+        );
+      }
+      if (responseUi.nodes?.length > 0) {
+        const nodes = responseUi.nodes;
+        nodes.forEach((node: any) => {
+          const normalizedKey = normalizeMessageKey(node.attributes.name);
+          setMessages((pres: any) => ({
+            ...pres,
+            [normalizedKey]: {
+              text: node.messages[0]?.text,
+              type: node.messages[0]?.type,
+            },
+          }));
+        });
+      }
+    }
+  }
+
+  function handleContinueWith(continueWith: Array<ContinueWith>) {
+    continueWith.forEach((c) => {
+      if (c.action === 'show_recovery_ui') {
+        window.location.href =
+          c.flow.url ?? `http://localhost:3000/auth/recovery?flow=${c.flow.id}`;
+        return;
+      } else if (c.action === 'show_settings_ui') {
+        window.location.href =
+          c.flow.url ?? `http://localhost:3000/auth/settings?flow=${c.flow.id}`;
+        return;
+      } else if (c.action === 'show_verification_ui') {
+        window.location.href =
+          c.flow.url ??
+          `http://localhost:3000/auth/verification?flow=${c.flow.id}`;
+        return;
+      }
+    });
+    if (continueWith.some((c) => c.action === 'redirect_browser_to')) {
+      const redirect = continueWith.find(
+        (c) => c.action === 'redirect_browser_to'
+      );
+      if (redirect) {
+        window.location.href = redirect.redirect_browser_to;
+      }
+    }
+  }
+
+  function resetFlowData() {
+    setData({});
+    setMessages({});
+    setCsrfToken();
+  }
+
+  function setCsrfToken() {
+    const csrf_token = getCsrfToken(flow.flow);
+    updateData('csrf_token', csrf_token);
   }
 
   useEffect(() => {
@@ -131,10 +180,9 @@ export function useAuthFlow(
     fetchFlow();
   }, [flowId, flowType]);
 
-  const setMethod = (method: string) => {
+  function setMethod(method: string) {
     updateData('method', method);
-    console.log(`set method to ${method}`);
-  };
+  }
 
   return {
     flow,
@@ -145,6 +193,7 @@ export function useAuthFlow(
     setMethod,
     setData: updateData,
     setMessages: updateMessages,
+    resetFlowData,
     updateFlow,
   };
 }

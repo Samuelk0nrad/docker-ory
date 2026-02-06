@@ -1,16 +1,16 @@
-import { LoginForm } from "@/components/login-form";
+import { LoginForm } from '@/app/auth/login/_component/login-form';
 
 export default async function LoginPage({
-  searchParams
+  searchParams,
 }: {
   searchParams: {
-    flow?: string
-  }
+    flow?: string;
+  };
 }) {
   const { flow: flowId } = await searchParams;
 
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10" >
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
         <LoginForm flowId={flowId} />
       </div>

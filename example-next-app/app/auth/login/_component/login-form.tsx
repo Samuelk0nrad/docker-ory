@@ -16,8 +16,8 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { useEffect } from 'react';
-import { Spinner } from './ui/spinner';
-import { Label } from './ui/label';
+import { Spinner } from '../../../../components/ui/spinner';
+import { Label } from '../../../../components/ui/label';
 import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
 
@@ -26,7 +26,10 @@ export function LoginForm({ flowId }: { flowId?: string }) {
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    authFlow.updateFlow();
+    const success = await authFlow.updateFlow();
+    if (success) {
+      authFlow.resetFlowData();
+    }
   };
 
   useEffect(() => {
@@ -52,20 +55,20 @@ export function LoginForm({ flowId }: { flowId?: string }) {
                   type="email"
                   placeholder="max@mustermann.com"
                   required
-                  value={authFlow.data.email || ''}
+                  value={authFlow.data.identifier || ''}
                   onChange={(event) => {
-                    authFlow.setData('email', event.target.value);
+                    authFlow.setData('identifier', event.target.value);
                   }}
                 />
-                {authFlow.messages.email && (
+                {authFlow.messages.identifier && (
                   <Label
                     className={
-                      authFlow.messages.email.type === 'error'
+                      authFlow.messages.identifier.type === 'error'
                         ? 'text-red-500'
                         : ''
                     }
                   >
-                    {authFlow.messages.email?.text}
+                    {authFlow.messages.identifier?.text}
                   </Label>
                 )}
               </Field>

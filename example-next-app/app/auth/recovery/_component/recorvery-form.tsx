@@ -3,31 +3,46 @@
 import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
 import { Label } from '@radix-ui/react-label';
-import { Button } from './ui/button';
+import { Button } from '../../../../components/ui/button';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-} from './ui/card';
-import { FieldGroup, Field, FieldLabel, FieldDescription } from './ui/field';
-import { Input } from './ui/input';
-import { Spinner } from './ui/spinner';
+} from '../../../../components/ui/card';
+import {
+  FieldGroup,
+  Field,
+  FieldLabel,
+  FieldDescription,
+} from '../../../../components/ui/field';
+import { Input } from '../../../../components/ui/input';
+import { Spinner } from '../../../../components/ui/spinner';
 import { useEffect } from 'react';
-import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '../../../../components/ui/input-otp';
 
 export function RecoveryForm({ flowId }: { flowId?: string }) {
   const authFlow = useAuthFlow(flowId, SelfServiceFlow.Recovery);
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    authFlow.updateFlow();
+    await authFlow.updateFlow();
   };
 
   useEffect(() => {
     authFlow.setMethod('code');
   }, [flowId]);
+
+  useEffect(() => {
+    if (authFlow.flow.flow?.state === 'sent_email') {
+      authFlow.setData('email', '');
+    }
+  }, [authFlow.flow.flow?.state]);
 
   if (authFlow.flow.flow?.state === 'choose_method') {
     return (
@@ -103,11 +118,19 @@ export function RecoveryForm({ flowId }: { flowId?: string }) {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form>
+            <form onSubmit={submitForm}>
               <FieldGroup>
                 <Field>
                   <FieldLabel htmlFor="otp">Verification code</FieldLabel>
-                  <InputOTP maxLength={6} id="otp" required>
+                  <InputOTP
+                    maxLength={6}
+                    id="otp"
+                    required
+                    value={authFlow.data.code || ''}
+                    onChange={(value) => {
+                      authFlow.setData('code', value);
+                    }}
+                  >
                     <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border">
                       <InputOTPSlot index={0} />
                       <InputOTPSlot index={1} />

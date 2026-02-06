@@ -1,4 +1,4 @@
-import { RecoveryForm } from '@/components/recorvery-form';
+import { RecoveryForm } from '@/app/auth/recovery/_component/recorvery-form';
 
 export default async function RecoveryPage({
   searchParams,

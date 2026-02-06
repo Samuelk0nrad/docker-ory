@@ -16,7 +16,7 @@ import {
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { Label } from '@radix-ui/react-label';
-import { Spinner } from './ui/spinner';
+import { Spinner } from '../../../../components/ui/spinner';
 import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
 import { useEffect } from 'react';

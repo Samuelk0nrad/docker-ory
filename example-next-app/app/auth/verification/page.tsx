@@ -1,25 +1,19 @@
-import CustomCardHeader from "@/components/custom-card-header"
-import { Verification } from "@ory/elements-react/theme"
-import { getVerificationFlow, OryPageParams } from "@ory/nextjs/app"
+import { VerificationForm } from './_component/verification-form';
 
-import config from "@/ory.config"
-
-export default async function VerificationPage(props: OryPageParams) {
-  const flow = await getVerificationFlow(config, props.searchParams)
-
-  if (!flow) {
-    return null
-  }
+export default async function VerificationPage({
+  searchParams,
+}: {
+  searchParams: {
+    flow?: string;
+  };
+}) {
+  const { flow: flowId } = await searchParams;
 
   return (
-    <Verification
-      flow={flow}
-      config={config}
-      components={{
-        Card: {
-          Header: CustomCardHeader,
-        },
-      }}
-    />
-  )
+    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
+      <div className="w-full max-w-sm">
+        <VerificationForm flowId={flowId} />
+      </div>
+    </div>
+  );
 }
