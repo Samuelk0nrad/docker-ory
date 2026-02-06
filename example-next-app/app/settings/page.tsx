@@ -1,5 +1,5 @@
 import '@ory/elements-react/theme/styles.css';
-import { SettingsForm } from '@/app/settings/_component/settings-form';
+import { SettingsPanel } from '@/app/settings/_component/settings_panel';
 
 export default async function SettingsPage({
   searchParams,
@@ -13,7 +13,7 @@ export default async function SettingsPage({
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
-        <SettingsForm flowId={flowId} />
+        <SettingsPanel flowId={flowId} />
       </div>
     </div>
   );

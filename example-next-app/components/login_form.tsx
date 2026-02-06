@@ -15,27 +15,26 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { useEffect } from 'react';
-import { Spinner } from '../../../../components/ui/spinner';
-import { Label } from '../../../../components/ui/label';
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { Label } from './ui/label';
+import { Spinner } from './ui/spinner';
 
-export function LoginForm({ flowId }: { flowId?: string }) {
-  const authFlow = useAuthFlow(flowId, SelfServiceFlow.Login);
-
-  const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
-    e?.preventDefault();
-    const success = await authFlow.updateFlow();
-    if (success) {
-      authFlow.resetFlowData();
-    }
-  };
-
-  useEffect(() => {
-    authFlow.setMethod('password');
-  }, [flowId]);
-
+export function LoginForm({
+  submitForm,
+  identifier,
+  setIdentifier,
+  password,
+  setPassword,
+  messages,
+  isLoading,
+}: {
+  submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
+  identifier: string;
+  setIdentifier: (identifier: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  messages: any;
+  isLoading: boolean;
+}) {
   return (
     <div className={'flex flex-col gap-6'}>
       <Card>
@@ -55,20 +54,18 @@ export function LoginForm({ flowId }: { flowId?: string }) {
                   type="email"
                   placeholder="max@mustermann.com"
                   required
-                  value={authFlow.data.identifier || ''}
+                  value={identifier}
                   onChange={(event) => {
-                    authFlow.setData('identifier', event.target.value);
+                    setIdentifier(event.target.value);
                   }}
                 />
-                {authFlow.messages.identifier && (
+                {messages.identifier && (
                   <Label
                     className={
-                      authFlow.messages.identifier.type === 'error'
-                        ? 'text-red-500'
-                        : ''
+                      messages.identifier.type === 'error' ? 'text-red-500' : ''
                     }
                   >
-                    {authFlow.messages.identifier?.text}
+                    {messages.identifier?.text}
                   </Label>
                 )}
               </Field>
@@ -86,36 +83,32 @@ export function LoginForm({ flowId }: { flowId?: string }) {
                   id="password"
                   type="password"
                   required
-                  value={authFlow.data.password || ''}
+                  value={password}
                   onChange={(event) => {
-                    authFlow.setData('password', event.target.value);
+                    setPassword(event.target.value);
                   }}
                 />
-                {authFlow.messages.password && (
+                {messages.password && (
                   <Label
                     className={
-                      authFlow.messages.password.type === 'error'
-                        ? 'text-red-500'
-                        : ''
+                      messages.password.type === 'error' ? 'text-red-500' : ''
                     }
                   >
-                    {authFlow.messages.password?.text}
+                    {messages.password?.text}
                   </Label>
                 )}
               </Field>
               <Field>
-                <Button type="submit" disabled={authFlow.isLoading}>
-                  {authFlow.isLoading ? <Spinner /> : 'Login'}
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Spinner /> : 'Login'}
                 </Button>
-                {authFlow.messages.general && (
+                {messages.general && (
                   <Label
                     className={
-                      authFlow.messages.general.type === 'error'
-                        ? 'text-red-500'
-                        : ''
+                      messages.general.type === 'error' ? 'text-red-500' : ''
                     }
                   >
-                    {authFlow.messages.general.text}
+                    {messages.general.text}
                   </Label>
                 )}
                 <Button variant="outline" type="button">

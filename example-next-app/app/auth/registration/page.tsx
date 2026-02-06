@@ -1,4 +1,4 @@
-import { SignupForm } from '@/app/auth/registration/_component/signup-form';
+import { SignupPanel } from '@/app/auth/registration/_component/signup_panel';
 
 export default async function RegistrationPage({
   searchParams,
@@ -12,7 +12,7 @@ export default async function RegistrationPage({
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
-        <SignupForm flowId={flowId} />
+        <SignupPanel flowId={flowId} />
       </div>
     </div>
   );

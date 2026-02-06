@@ -1,31 +1,31 @@
-import {
-  RegistrationFlow,
-  LoginFlow,
-  RecoveryFlow,
-  SettingsFlow,
-  VerificationFlow,
-} from '@ory/client';
+import axios, { AxiosResponse } from 'axios';
 import { kratos } from '../kratos';
-import { AnyFlow } from './types/AnyFlow';
 import { FlowTypeEnum } from './types/FlowTypes';
+import { UpdateFlowBodyMap } from './types/UpdateFlowBodyMap';
+import { UpdateFlowResponseMap } from './types/UpdateFlowResponseMap';
+import { FlowMap } from './types/FlowMap';
 
 // Constrain the generic to be one of the flow types
-export class SelfServiceFlow<T extends AnyFlow = AnyFlow> {
+export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
   flowType: FlowTypeEnum;
-  flow: T | null = null;
+  flow: FlowMap[T] | null = null;
 
   constructor(flowType: FlowTypeEnum) {
     this.flowType = flowType;
   }
 
   // Static instances for each flow type
-  static Registration = new SelfServiceFlow<RegistrationFlow>(
+  static Registration = new SelfServiceFlow<FlowTypeEnum.Registration>(
     FlowTypeEnum.Registration
   );
-  static Login = new SelfServiceFlow<LoginFlow>(FlowTypeEnum.Login);
-  static Recovery = new SelfServiceFlow<RecoveryFlow>(FlowTypeEnum.Recovery);
-  static Settings = new SelfServiceFlow<SettingsFlow>(FlowTypeEnum.Settings);
-  static Verification = new SelfServiceFlow<VerificationFlow>(
+  static Login = new SelfServiceFlow<FlowTypeEnum.Login>(FlowTypeEnum.Login);
+  static Recovery = new SelfServiceFlow<FlowTypeEnum.Recovery>(
+    FlowTypeEnum.Recovery
+  );
+  static Settings = new SelfServiceFlow<FlowTypeEnum.Settings>(
+    FlowTypeEnum.Settings
+  );
+  static Verification = new SelfServiceFlow<FlowTypeEnum.Verification>(
     FlowTypeEnum.Verification
   );
 
@@ -37,19 +37,23 @@ export class SelfServiceFlow<T extends AnyFlow = AnyFlow> {
   async createFlow(): Promise<void> {
     switch (this.flowType) {
       case FlowTypeEnum.Registration:
-        this.flow = (await kratos.createBrowserRegistrationFlow()).data as T;
+        this.flow = (await kratos.createBrowserRegistrationFlow())
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Login:
-        this.flow = (await kratos.createBrowserLoginFlow()).data as T;
+        this.flow = (await kratos.createBrowserLoginFlow()).data as FlowMap[T];
         break;
       case FlowTypeEnum.Recovery:
-        this.flow = (await kratos.createBrowserRecoveryFlow()).data as T;
+        this.flow = (await kratos.createBrowserRecoveryFlow())
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Settings:
-        this.flow = (await kratos.createBrowserSettingsFlow()).data as T;
+        this.flow = (await kratos.createBrowserSettingsFlow())
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Verification:
-        this.flow = (await kratos.createBrowserVerificationFlow()).data as T;
+        this.flow = (await kratos.createBrowserVerificationFlow())
+          .data as FlowMap[T];
         break;
       default:
         throw new Error('Invalid flow type');
@@ -61,20 +65,23 @@ export class SelfServiceFlow<T extends AnyFlow = AnyFlow> {
     switch (this.flowType) {
       case FlowTypeEnum.Registration:
         this.flow = (await kratos.getRegistrationFlow({ id: flowId }))
-          .data as T;
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Login:
-        this.flow = (await kratos.getLoginFlow({ id: flowId })).data as T;
+        this.flow = (await kratos.getLoginFlow({ id: flowId }))
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Recovery:
-        this.flow = (await kratos.getRecoveryFlow({ id: flowId })).data as T;
+        this.flow = (await kratos.getRecoveryFlow({ id: flowId }))
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Settings:
-        this.flow = (await kratos.getSettingsFlow({ id: flowId })).data as T;
+        this.flow = (await kratos.getSettingsFlow({ id: flowId }))
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Verification:
         this.flow = (await kratos.getVerificationFlow({ id: flowId }))
-          .data as T;
+          .data as FlowMap[T];
         break;
       default:
         throw new Error('Invalid flow type');
@@ -82,7 +89,9 @@ export class SelfServiceFlow<T extends AnyFlow = AnyFlow> {
   }
 
   // Method to update the flow
-  async updateFlow(flowData: any): Promise<any> {
+  async updateFlow(
+    flowData: UpdateFlowBodyMap[T]
+  ): Promise<AxiosResponse<UpdateFlowResponseMap[T], any, {}>> {
     if (!this.flow) {
       throw new Error('Flow not initialized');
     }
@@ -93,36 +102,36 @@ export class SelfServiceFlow<T extends AnyFlow = AnyFlow> {
       case FlowTypeEnum.Registration:
         response = await kratos.updateRegistrationFlow({
           flow: this.flow.id!,
-          updateRegistrationFlowBody: flowData,
+          updateRegistrationFlowBody: flowData as any,
         });
         break;
       case FlowTypeEnum.Login:
         response = await kratos.updateLoginFlow({
           flow: this.flow.id!,
-          updateLoginFlowBody: flowData,
+          updateLoginFlowBody: flowData as any,
         });
         break;
       case FlowTypeEnum.Recovery:
         response = await kratos.updateRecoveryFlow({
           flow: this.flow.id!,
-          updateRecoveryFlowBody: flowData,
+          updateRecoveryFlowBody: flowData as any,
         });
         break;
       case FlowTypeEnum.Settings:
         response = await kratos.updateSettingsFlow({
           flow: this.flow.id!,
-          updateSettingsFlowBody: flowData,
+          updateSettingsFlowBody: flowData as any,
         });
         break;
       case FlowTypeEnum.Verification:
         response = await kratos.updateVerificationFlow({
           flow: this.flow.id!,
-          updateVerificationFlowBody: flowData,
+          updateVerificationFlowBody: flowData as any,
         });
         break;
       default:
         throw new Error('Invalid flow type');
     }
-    return response.data;
+    return response as AxiosResponse<UpdateFlowResponseMap[T], any, {}>;
   }
 }

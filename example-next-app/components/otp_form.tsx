@@ -14,43 +14,33 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
-import { useEffect } from 'react';
-import {
-  InputOTP,
-  InputOTPGroup,
-  InputOTPSlot,
-} from '@/components/ui/input-otp';
-import { useRouter } from 'next/navigation';
+import { Label } from './ui/label';
+import { Spinner } from './ui/spinner';
+import { InputOTP, InputOTPGroup, InputOTPSlot } from './ui/input-otp';
 
-export function VerificationForm({ flowId }: { flowId?: string }) {
-  const router = useRouter();
-  const authFlow = useAuthFlow(flowId, SelfServiceFlow.Verification);
-
-  const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
-    e?.preventDefault();
-    authFlow.updateFlow();
-  };
-
-  useEffect(() => {
-    authFlow.setMethod('code');
-  }, [flowId]);
-
-  useEffect(() => {
-    if (authFlow.flow.flow?.state === 'passed_challenge') {
-      router.push('/');
-    }
-  }, [authFlow.flow.flow?.state]);
-
+export function OTPForm({
+  title,
+  description,
+  submitForm,
+  code,
+  setCode,
+  messages,
+  isLoading,
+}: {
+  title: string;
+  description: string;
+  submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
+  code: string;
+  setCode: (code: string) => void;
+  messages: any;
+  isLoading: boolean;
+}) {
   return (
     <div className={'flex flex-col gap-6'}>
       <Card>
         <CardHeader>
-          <CardTitle>Verify your email</CardTitle>
-          <CardDescription>
-            We sent a 6-digit code to your email.
-          </CardDescription>
+          <CardTitle>{title}</CardTitle>
+          <CardDescription>{description}</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={submitForm}>
@@ -61,9 +51,9 @@ export function VerificationForm({ flowId }: { flowId?: string }) {
                   maxLength={6}
                   id="otp"
                   required
-                  value={authFlow.data.code || ''}
+                  value={code}
                   onChange={(value) => {
-                    authFlow.setData('code', value);
+                    setCode(value);
                   }}
                 >
                   <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border">
@@ -80,7 +70,18 @@ export function VerificationForm({ flowId }: { flowId?: string }) {
                 </FieldDescription>
               </Field>
               <FieldGroup>
-                <Button type="submit">Verify</Button>
+                <Button type="submit" disabled={isLoading}>
+                  {isLoading ? <Spinner /> : 'Verify'}
+                </Button>
+                {messages.general && (
+                  <Label
+                    className={
+                      messages.general.type === 'error' ? 'text-red-500' : ''
+                    }
+                  >
+                    {messages.general.text}
+                  </Label>
+                )}
                 <FieldDescription className="text-center">
                   Didn&apos;t receive the code? <a href="#">Resend</a>
                 </FieldDescription>

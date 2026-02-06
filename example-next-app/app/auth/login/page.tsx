@@ -1,4 +1,4 @@
-import { LoginForm } from '@/app/auth/login/_component/login-form';
+import { LoginPanel } from '@/app/auth/login/_component/login_panel';
 
 export default async function LoginPage({
   searchParams,
@@ -12,7 +12,7 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
       <div className="w-full max-w-sm">
-        <LoginForm flowId={flowId} />
+        <LoginPanel flowId={flowId} />
       </div>
     </div>
   );

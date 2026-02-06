@@ -14,34 +14,35 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-import { Input } from '@/components/ui/input';
-import { Label } from '@radix-ui/react-label';
-import { Spinner } from '../../../../components/ui/spinner';
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
-import { useEffect } from 'react';
+import { Label } from './ui/label';
+import { Spinner } from './ui/spinner';
+import { Input } from './ui/input';
 
-export function SignupForm({ flowId }: { flowId?: string }) {
-  const authFlow = useAuthFlow(flowId, SelfServiceFlow.Registration);
-
-  const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
-    e?.preventDefault();
-
-    if (authFlow.data.password !== authFlow.data.confirmPassword) {
-      authFlow.setMessages('confirmPassword', {
-        text: 'Passwords do not match',
-        type: 'error',
-      });
-      return;
-    }
-
-    authFlow.updateFlow();
-  };
-
-  useEffect(() => {
-    authFlow.setMethod('password');
-  }, [flowId]);
-
+export function SignupForm({
+  submitForm,
+  email,
+  setEmail,
+  name,
+  setName,
+  password,
+  setPassword,
+  confirmPassword,
+  setConfirmPassword,
+  messages,
+  isLoading,
+}: {
+  submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
+  email: string;
+  setEmail: (email: string) => void;
+  name: string;
+  setName: (name: string) => void;
+  password: string;
+  setPassword: (password: string) => void;
+  confirmPassword: string;
+  setConfirmPassword: (confirmPassword: string) => void;
+  messages: any;
+  isLoading: boolean;
+}) {
   return (
     <Card>
       <CardHeader>
@@ -64,21 +65,17 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="name"
                 type="text"
                 placeholder="John Doe"
-                value={authFlow.data.traits?.name || ''}
-                onChange={(event) =>
-                  authFlow.setData('traits.name', event.target.value)
-                }
+                value={name}
+                onChange={(event) => setName(event.target.value)}
                 required
               />
-              {authFlow.messages.name && (
+              {messages.name && (
                 <Label
                   className={
-                    authFlow.messages.name.type === 'error'
-                      ? 'text-red-500'
-                      : ''
+                    messages.name.type === 'error' ? 'text-red-500' : ''
                   }
                 >
-                  {authFlow.messages.name.text}
+                  {messages.name.text}
                 </Label>
               )}
             </Field>
@@ -89,20 +86,16 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 type="email"
                 placeholder="m@example.com"
                 required
-                value={authFlow.data.traits?.email || ''}
-                onChange={(event) =>
-                  authFlow.setData('traits.email', event.target.value)
-                }
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
               />
-              {authFlow.messages.email ? (
+              {messages.email ? (
                 <Label
                   className={
-                    authFlow.messages.email.type === 'error'
-                      ? 'text-red-500'
-                      : ''
+                    messages.email.type === 'error' ? 'text-red-500' : ''
                   }
                 >
-                  {authFlow.messages.email.text}
+                  {messages.email.text}
                 </Label>
               ) : (
                 <FieldDescription>
@@ -117,20 +110,16 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="password"
                 type="password"
                 required
-                value={authFlow.data.password || ''}
-                onChange={(event) =>
-                  authFlow.setData('password', event.target.value)
-                }
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
               />
-              {authFlow.messages.password ? (
+              {messages.password ? (
                 <Label
                   className={
-                    authFlow.messages.password.type === 'error'
-                      ? 'text-red-500'
-                      : ''
+                    messages.password.type === 'error' ? 'text-red-500' : ''
                   }
                 >
-                  {authFlow.messages.password.text}
+                  {messages.password.text}
                 </Label>
               ) : (
                 <FieldDescription>
@@ -146,37 +135,33 @@ export function SignupForm({ flowId }: { flowId?: string }) {
                 id="confirm-password"
                 type="password"
                 required
-                value={authFlow.data.confirmPassword || ''}
-                onChange={(event) =>
-                  authFlow.setData('confirmPassword', event.target.value)
-                }
+                value={confirmPassword}
+                onChange={(event) => setConfirmPassword(event.target.value)}
               />
-              {authFlow.messages.confirmPassword && (
+              {messages.confirmPassword && (
                 <Label
                   className={
-                    authFlow.messages.confirmPassword.type === 'error'
+                    messages.confirmPassword.type === 'error'
                       ? 'text-red-500'
                       : ''
                   }
                 >
-                  {authFlow.messages.confirmPassword.text}
+                  {messages.confirmPassword.text}
                 </Label>
               )}
             </Field>
             <FieldGroup>
               <Field>
                 <Button type="submit">
-                  {authFlow.isLoading ? <Spinner /> : 'Create Account'}
+                  {isLoading ? <Spinner /> : 'Create Account'}
                 </Button>
-                {authFlow.messages.general && (
+                {messages.general && (
                   <Label
                     className={
-                      authFlow.messages.general.type === 'error'
-                        ? 'text-red-500'
-                        : ''
+                      messages.general.type === 'error' ? 'text-red-500' : ''
                     }
                   >
-                    {authFlow.messages.general.text}
+                    {messages.general.text}
                   </Label>
                 )}
                 <Button variant="outline" type="button">

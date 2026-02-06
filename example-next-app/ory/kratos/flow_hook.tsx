@@ -1,17 +1,27 @@
 import { useEffect, useState } from 'react';
 import { SelfServiceFlow } from './flow/SelfServiceFlow';
-import { ResponseUI } from './types';
 import { AxiosError } from 'axios';
-import { getCsrfToken } from '@/lib/utils';
-import { ContinueWith } from '@ory/client';
+import {
+  ContinueWith,
+  UiContainer,
+  UiNode,
+  UiNodeInputAttributes,
+  UiText,
+} from '@ory/client';
+import { FlowTypeEnum } from './flow/types/FlowTypes';
+import { UpdateFlowBodyMap } from './flow/types/UpdateFlowBodyMap';
+import { FlowMap } from './flow/types/FlowMap';
+import { getCsrfToken } from './utils';
+import { GenericFlowResponse } from './flow/types/GenericFlowResponse';
 
-export function useAuthFlow(
-  flowId?: string,
-  flowType: SelfServiceFlow = SelfServiceFlow.Registration
-) {
+export function useAuthFlow<
+  T extends keyof FlowMap = FlowTypeEnum.Registration,
+>(flowType: SelfServiceFlow<T>, flowId?: string) {
   const flow = flowType;
-  const [data, setData] = useState<any>({});
-  const [messages, setMessages] = useState<any>({});
+  const [data, setData] = useState<Partial<UpdateFlowBodyMap[T]>>({});
+  const [messages, setMessages] = useState<
+    Record<string, Pick<UiText, 'text' | 'type'>>
+  >({});
   const [isLoading, setIsLoading] = useState(false);
 
   async function startFlow(): Promise<boolean> {
@@ -24,11 +34,19 @@ export function useAuthFlow(
       }
       setCsrfToken();
     } catch (error) {
-      if (error instanceof AxiosError && error.response?.data.error) {
-        handleResponse(error.response?.data);
+      if (error instanceof AxiosError) {
+        const responseData = error.response?.data as GenericFlowResponse;
+        if (responseData?.error || responseData?.ui) {
+          handleResponse(responseData);
+        } else {
+          updateMessages('general', {
+            text: 'An error occurred, please try again later',
+            type: 'error',
+          });
+        }
       } else {
         updateMessages('general', {
-          text: 'an error occurred please try again later',
+          text: 'An unexpected error occurred',
           type: 'error',
         });
       }
@@ -37,9 +55,13 @@ export function useAuthFlow(
     return res;
   }
 
-  function setNestedValue(obj: Record<string, any>, path: string, value: any) {
+  function setNestedValue(
+    obj: Record<string, unknown>,
+    path: string,
+    value: unknown
+  ) {
     const keys = path.split('.');
-    const result = { ...obj };
+    const result: Record<string, any> = { ...obj };
     let current = result;
 
     keys.forEach((keyPart, index) => {
@@ -57,17 +79,17 @@ export function useAuthFlow(
     return key.startsWith('traits.') ? key.replace('traits.', '') : key;
   }
 
-  function updateData(key: string, value: any) {
+  function updateData(key: string, value: unknown) {
     const updated = key.includes('.')
-      ? setNestedValue(data, key, value)
+      ? setNestedValue(data as Record<string, unknown>, key, value)
       : { ...data, [key]: value };
-    setData((prev: any) => {
+    setData((prev) => {
       return { ...prev, ...updated };
     });
   }
 
-  function updateMessages(key: string, value: any) {
-    setMessages((prev: any) => ({ ...prev, [key]: value }));
+  function updateMessages(key: string, value: Pick<UiText, 'text' | 'type'>) {
+    setMessages((prev) => ({ ...prev, [key]: value }));
   }
 
   async function updateFlow(): Promise<boolean> {
@@ -75,17 +97,20 @@ export function useAuthFlow(
     let res = true;
     try {
       if (flow) {
-        const newFlow = await flow.updateFlow(data);
+        const result = await flow.updateFlow(data as UpdateFlowBodyMap[T]);
 
-        handleResponse(newFlow);
-
-        flow.flow = newFlow;
+        handleResponse(result.data as unknown as GenericFlowResponse);
       } else {
         throw new Error('Flow not initialized');
       }
     } catch (error) {
       if (error instanceof AxiosError && error.response?.data) {
-        handleResponse(error.response?.data);
+        handleResponse(error.response?.data as GenericFlowResponse);
+      } else {
+        updateMessages('general', {
+          text: 'An unexpected error occurred during update',
+          type: 'error',
+        });
       }
       res = false;
     } finally {
@@ -94,7 +119,7 @@ export function useAuthFlow(
     return res;
   }
 
-  function handleResponse(response: any) {
+  function handleResponse(response: GenericFlowResponse) {
     if (response.continue_with) {
       handleContinueWith(response.continue_with);
     }
@@ -109,27 +134,30 @@ export function useAuthFlow(
       });
     }
     if (response.ui) {
-      const responseUi: ResponseUI = response.ui;
-      if (responseUi?.messages?.length > 0) {
-        updateMessages(
-          'general',
-          responseUi.messages.map((msg) => ({
-            text: msg.text,
-            type: msg.type,
-          }))[0]
-        );
+      const responseUi: UiContainer = response.ui;
+      if (responseUi.messages && responseUi.messages.length > 0) {
+        const msg = responseUi.messages[0];
+        updateMessages('general', {
+          text: msg.text,
+          type: msg.type,
+        });
       }
-      if (responseUi.nodes?.length > 0) {
-        const nodes = responseUi.nodes;
-        nodes.forEach((node: any) => {
-          const normalizedKey = normalizeMessageKey(node.attributes.name);
-          setMessages((pres: any) => ({
-            ...pres,
-            [normalizedKey]: {
-              text: node.messages[0]?.text,
-              type: node.messages[0]?.type,
-            },
-          }));
+      if (responseUi.nodes && responseUi.nodes.length > 0) {
+        responseUi.nodes.forEach((node: UiNode) => {
+          if (node.attributes.node_type === 'input') {
+            const attributes = node.attributes as UiNodeInputAttributes;
+            const normalizedKey = normalizeMessageKey(attributes.name);
+            if (node.messages.length > 0) {
+              const msg = node.messages[0];
+              setMessages((prev) => ({
+                ...prev,
+                [normalizedKey]: {
+                  text: msg.text,
+                  type: msg.type,
+                },
+              }));
+            }
+          }
         });
       }
     }
@@ -169,13 +197,15 @@ export function useAuthFlow(
   }
 
   function setCsrfToken() {
-    const csrf_token = getCsrfToken(flow.flow);
-    updateData('csrf_token', csrf_token);
+    if (flow.flow) {
+      const csrf_token = getCsrfToken(flow.flow);
+      updateData('csrf_token', csrf_token);
+    }
   }
 
   useEffect(() => {
     const fetchFlow = async () => {
-      startFlow();
+      await startFlow();
     };
     fetchFlow();
   }, [flowId, flowType]);
