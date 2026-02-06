@@ -81,6 +81,10 @@ export function useAuthFlow(
     try {
       if (flow) {
         const newFlow = await flow.updateFlow(data);
+        console.log(newFlow);
+        if (newFlow?.ui?.nodes) {
+          handleResponse(newFlow.ui);
+        }
         flow.flow = newFlow;
       } else {
         throw new Error('Flow not initialized');
@@ -88,34 +92,37 @@ export function useAuthFlow(
     } catch (error) {
       console.log(error);
       if (error instanceof AxiosError && error.response?.data?.ui) {
-        const responseUi: ResponseUI = error.response?.data?.ui;
-        if (responseUi?.messages?.length > 0) {
-          updateMessages(
-            'general',
-            responseUi.messages.map((msg) => ({
-              text: msg.text,
-              type: msg.type,
-            }))[0]
-          );
-        }
-        if (responseUi.nodes?.length > 0) {
-          const nodes = responseUi.nodes;
-          nodes.forEach((node: any) => {
-            const normalizedKey = normalizeMessageKey(node.attributes.name);
-            setMessages((pres: any) => ({
-              ...pres,
-              [normalizedKey]: {
-                text: node.messages[0]?.text,
-                type: node.messages[0]?.type,
-              },
-            }));
-          });
-        }
+        handleResponse(error.response?.data.ui as ResponseUI);
       }
     } finally {
       setIsLoading(false);
     }
   };
+
+  function handleResponse(responseUi: ResponseUI) {
+    if (responseUi?.messages?.length > 0) {
+      updateMessages(
+        'general',
+        responseUi.messages.map((msg) => ({
+          text: msg.text,
+          type: msg.type,
+        }))[0]
+      );
+    }
+    if (responseUi.nodes?.length > 0) {
+      const nodes = responseUi.nodes;
+      nodes.forEach((node: any) => {
+        const normalizedKey = normalizeMessageKey(node.attributes.name);
+        setMessages((pres: any) => ({
+          ...pres,
+          [normalizedKey]: {
+            text: node.messages[0]?.text,
+            type: node.messages[0]?.type,
+          },
+        }));
+      });
+    }
+  }
 
   useEffect(() => {
     const fetchFlow = async () => {

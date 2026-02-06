@@ -40,12 +40,7 @@ export function SignupForm({ flowId }: { flowId?: string }) {
 
   useEffect(() => {
     authFlow.setMethod('password');
-    console.log('set method to password');
   }, [flowId]);
-
-  useEffect(() => {
-    console.log('Messages updated:', authFlow.messages);
-  }, [authFlow.messages]);
 
   return (
     <Card>
