@@ -50,6 +50,21 @@ selfservice:
       enabled: true
     code:
       enabled: true
+    oidc:
+      config:
+        providers:
+          - id: google
+            provider: google
+            client_id: 
+            client_secret: 
+            allow_sign_in: true
+            trust_email: true
+            scope:
+              - openid
+              - email
+              - profile
+
+      enabled: true
 
 courier:
   smtp:
