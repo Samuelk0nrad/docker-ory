@@ -1,48 +1,45 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Field, FieldGroup } from '@/components/ui/field';
-import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { OneButtonForm } from '@/components/one_button_form';
 import { PasswordChangeForm } from '@/components/passwor_change_form';
+import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { FlowTypeEnum } from '@/ory/kratos/flow/types/FlowTypes';
+import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { UpdateSettingsFlowWithPasswordMethod } from '@ory/client';
+import { useRouter } from 'next/navigation';
+
+type SettingsData = UpdateSettingsFlowWithPasswordMethod & {
+  uiOnly?: {
+    confirmPassword?: string;
+  };
+};
 
 export function SettingsPanel({ flowId }: { flowId?: string }) {
   const router = useRouter();
-  const authFlow = useAuthFlow(SelfServiceFlow.Settings, flowId);
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [confirmPasswordError, setConfirmPasswordError] = useState('');
-
-  const data = authFlow.data as Partial<UpdateSettingsFlowWithPasswordMethod>;
+  const authFlow = useAuthFlow<FlowTypeEnum.Settings, SettingsData>(
+    SelfServiceFlow.Settings,
+    flowId,
+    'password'
+  );
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
     const success = await authFlow.updateFlow();
 
-    if (data.password !== confirmPassword) {
-      setConfirmPasswordError('Passwords do not match');
+    if (authFlow.data.password !== authFlow.data.uiOnly?.confirmPassword) {
+      authFlow.setMessages('confirmPassword', {
+        text: 'Passwords do not match',
+        type: 'error',
+      });
       return;
     } else {
-      setConfirmPasswordError('');
+      authFlow.setMessages('confirmPassword', { text: '', type: 'info' });
     }
 
     if (success) {
       authFlow.resetFlowData();
     }
   };
-
-  useEffect(() => {
-    authFlow.setMethod('password');
-  }, [flowId]);
 
   if (
     authFlow.flow.flow?.ui?.messages?.some(
@@ -52,46 +49,35 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
     return (
       <PasswordChangeForm
         submitForm={submitForm}
-        password={data.password || ''}
+        password={authFlow.data.password || ''}
         setPassword={(value) => authFlow.setData('password', value)}
-        confirmPassword={confirmPassword}
-        setConfirmPassword={setConfirmPassword}
-        messages={{
-          ...authFlow.messages,
-          ...(confirmPasswordError
-            ? { confirmPassword: { text: confirmPasswordError, type: 'error' } }
-            : {}),
-        }}
+        confirmPassword={authFlow.data.uiOnly?.confirmPassword || ''}
+        setConfirmPassword={(value) =>
+          authFlow.setData('uiOnly.confirmPassword', value)
+        }
+        messages={authFlow.messages}
         isLoading={authFlow.isLoading}
       />
     );
   } else if (authFlow.flow.flow?.state === 'success') {
     return (
-      <div className={'flex flex-col gap-6'}>
-        <Card>
-          <CardHeader>
-            <CardTitle>Your Password Has Been Changed Successfully</CardTitle>
-            <CardDescription>You are now logged in</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <FieldGroup>
-              <Field>
-                <Button
-                  type="button"
-                  onClick={() => {
-                    router.push('/');
-                  }}
-                  disabled={authFlow.isLoading}
-                >
-                  Continue to homepage
-                </Button>
-              </Field>
-            </FieldGroup>
-          </CardContent>
-        </Card>
-      </div>
+      <OneButtonForm
+        title="Your Password Has Been Changed Successfully"
+        description="You are now logged in"
+        buttonText="Continue to homepage"
+        onClick={() => router.push('/')}
+        isLoading={authFlow.isLoading}
+      />
     );
   } else {
-    return <div className={'flex flex-col gap-6'}>not implemented yet</div>;
+    return (
+      <OneButtonForm
+        title="not implemented yet"
+        description=""
+        buttonText="Continue to homepage"
+        onClick={() => router.push('/')}
+        isLoading={authFlow.isLoading}
+      />
+    );
   }
 }

@@ -1,6 +1,3 @@
-import { useEffect, useState } from 'react';
-import { SelfServiceFlow } from './flow/SelfServiceFlow';
-import { AxiosError } from 'axios';
 import {
   ContinueWith,
   UiContainer,
@@ -8,19 +5,25 @@ import {
   UiNodeInputAttributes,
   UiText,
 } from '@ory/client';
-import { FlowTypeEnum } from './flow/types/FlowTypes';
-import { UpdateFlowBodyMap } from './flow/types/UpdateFlowBodyMap';
+import { AxiosError } from 'axios';
+import { useEffect, useState } from 'react';
+import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
-import { getCsrfToken } from './utils';
+import { FlowTypeEnum } from './flow/types/FlowTypes';
 import { GenericFlowResponse } from './flow/types/GenericFlowResponse';
+import { UpdateFlowBodyMap } from './flow/types/UpdateFlowBodyMap';
+import { getCsrfToken } from './utils';
 
 export function useAuthFlow<
   T extends keyof FlowMap = FlowTypeEnum.Registration,
->(flowType: SelfServiceFlow<T>, flowId?: string) {
+  B = UpdateFlowBodyMap[T],
+>(flowType: SelfServiceFlow<T>, flowId?: string, method?: string) {
   const flow = flowType;
-  const [data, setData] = useState<Partial<UpdateFlowBodyMap[T]>>({});
+  const [data, setData] = useState<Partial<B>>(
+    method ? ({ method } as unknown as Partial<B>) : {}
+  );
   const [messages, setMessages] = useState<
-    Record<string, Pick<UiText, 'text' | 'type'>>
+    Record<string, UiText | { text: string; type: string }>
   >({});
   const [isLoading, setIsLoading] = useState(false);
 
@@ -33,6 +36,7 @@ export function useAuthFlow<
         await flow.createFlow();
       }
       setCsrfToken();
+      handleResponse(flow.flow as unknown as GenericFlowResponse);
     } catch (error) {
       if (error instanceof AxiosError) {
         const responseData = error.response?.data as GenericFlowResponse;
@@ -97,7 +101,9 @@ export function useAuthFlow<
     let res = true;
     try {
       if (flow) {
-        const result = await flow.updateFlow(data as UpdateFlowBodyMap[T]);
+        const result = await flow.updateFlow(
+          data as unknown as UpdateFlowBodyMap[T]
+        );
 
         handleResponse(result.data as unknown as GenericFlowResponse);
       } else {
@@ -137,10 +143,7 @@ export function useAuthFlow<
       const responseUi: UiContainer = response.ui;
       if (responseUi.messages && responseUi.messages.length > 0) {
         const msg = responseUi.messages[0];
-        updateMessages('general', {
-          text: msg.text,
-          type: msg.type,
-        });
+        updateMessages('general', msg);
       }
       if (responseUi.nodes && responseUi.nodes.length > 0) {
         responseUi.nodes.forEach((node: UiNode) => {
@@ -151,10 +154,7 @@ export function useAuthFlow<
               const msg = node.messages[0];
               setMessages((prev) => ({
                 ...prev,
-                [normalizedKey]: {
-                  text: msg.text,
-                  type: msg.type,
-                },
+                [normalizedKey]: msg,
               }));
             }
           }
@@ -164,7 +164,8 @@ export function useAuthFlow<
   }
 
   function handleContinueWith(continueWith: Array<ContinueWith>) {
-    continueWith.forEach((c) => {
+    // Check for UI flows first (higher priority)
+    for (const c of continueWith) {
       if (c.action === 'show_recovery_ui') {
         window.location.href =
           c.flow.url ?? `http://localhost:3000/auth/recovery?flow=${c.flow.id}`;
@@ -179,19 +180,19 @@ export function useAuthFlow<
           `http://localhost:3000/auth/verification?flow=${c.flow.id}`;
         return;
       }
-    });
-    if (continueWith.some((c) => c.action === 'redirect_browser_to')) {
-      const redirect = continueWith.find(
-        (c) => c.action === 'redirect_browser_to'
-      );
-      if (redirect) {
-        window.location.href = redirect.redirect_browser_to;
-      }
+    }
+
+    // Only check for redirect if no UI flow was found
+    const redirect = continueWith.find(
+      (c) => c.action === 'redirect_browser_to'
+    );
+    if (redirect) {
+      window.location.href = redirect.redirect_browser_to;
     }
   }
 
   function resetFlowData() {
-    setData({});
+    setData(method ? ({ method } as unknown as Partial<B>) : {});
     setMessages({});
     setCsrfToken();
   }

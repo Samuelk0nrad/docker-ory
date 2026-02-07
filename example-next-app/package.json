@@ -20,6 +20,7 @@
     "input-otp": "^1.4.2",
     "lucide-react": "^0.563.0",
     "next": "16.1.6",
+    "prettier-plugin-organize-imports": "^4.3.0",
     "radix-ui": "^1.4.3",
     "react": "19.2.3",
     "react-dom": "19.2.3",

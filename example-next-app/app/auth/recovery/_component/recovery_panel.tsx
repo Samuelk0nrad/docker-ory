@@ -1,22 +1,23 @@
 'use client';
 
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
-import { useEffect } from 'react';
 import { EmailForm } from '@/components/email_form';
 import { OTPForm } from '@/components/otp_form';
+import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { FlowTypeEnum } from '@/ory/kratos/flow/types/FlowTypes';
+import { useAuthFlow } from '@/ory/kratos/flow_hook';
+import { UpdateRecoveryFlowWithCodeMethod } from '@ory/client';
+import { useEffect } from 'react';
 
 export function RecoveryPanel({ flowId }: { flowId?: string }) {
-  const authFlow = useAuthFlow(flowId, SelfServiceFlow.Recovery);
+  const authFlow = useAuthFlow<
+    FlowTypeEnum.Recovery,
+    UpdateRecoveryFlowWithCodeMethod
+  >(SelfServiceFlow.Recovery, flowId, 'code');
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
     await authFlow.updateFlow();
   };
-
-  useEffect(() => {
-    authFlow.setMethod('code');
-  }, [flowId]);
 
   useEffect(() => {
     if (authFlow.flow.flow?.state === 'sent_email') {

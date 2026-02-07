@@ -1,9 +1,9 @@
-import axios, { AxiosResponse } from 'axios';
+import { AxiosResponse } from 'axios';
 import { kratos } from '../kratos';
+import { FlowMap } from './types/FlowMap';
 import { FlowTypeEnum } from './types/FlowTypes';
 import { UpdateFlowBodyMap } from './types/UpdateFlowBodyMap';
 import { UpdateFlowResponseMap } from './types/UpdateFlowResponseMap';
-import { FlowMap } from './types/FlowMap';
 
 // Constrain the generic to be one of the flow types
 export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
@@ -88,7 +88,6 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
     }
   }
 
-  // Method to update the flow
   async updateFlow(
     flowData: UpdateFlowBodyMap[T]
   ): Promise<AxiosResponse<UpdateFlowResponseMap[T], any, {}>> {
@@ -132,6 +131,17 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
       default:
         throw new Error('Invalid flow type');
     }
+
+    // Update the flow with the response data if it contains a flow object
+    const responseData = response.data as any;
+    if (
+      responseData &&
+      typeof responseData === 'object' &&
+      'id' in responseData
+    ) {
+      this.flow = responseData as FlowMap[T];
+    }
+
     return response as AxiosResponse<UpdateFlowResponseMap[T], any, {}>;
   }
 }

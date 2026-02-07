@@ -1,12 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
-import { useAuthFlow } from '@/ory/kratos/flow_hook';
-import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
 import { LoginForm } from '@/components/login_form';
+import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
+import { FlowTypeEnum } from '@/ory/kratos/flow/types/FlowTypes';
+import { useAuthFlow } from '@/ory/kratos/flow_hook';
+import { UpdateLoginFlowWithPasswordMethod } from '@ory/client';
+import { useEffect } from 'react';
 
 export function LoginPanel({ flowId }: { flowId?: string }) {
-  const authFlow = useAuthFlow(flowId, SelfServiceFlow.Login);
+  const authFlow = useAuthFlow<
+    FlowTypeEnum.Login,
+    UpdateLoginFlowWithPasswordMethod
+  >(SelfServiceFlow.Login, flowId, 'password');
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
