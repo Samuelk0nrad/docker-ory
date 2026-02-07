@@ -8,7 +8,7 @@ Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos
 - [ORY Kratos](https://www.ory.com/kratos)
 - [ORY Hydra](https://www.ory.com/hydra) (WIP)
 - mailslurper for development
-- nextjs example implementation for the kratos flow with custom UI (shadcn) (WIP)
+- [nextjs example](./example-next-app/) implementation for the kratos flow with custom UI (shadcn) (WIP)
 
 ## Starter
 
@@ -19,8 +19,8 @@ Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos
 
 ## [ORY Kratos](https://www.ory.com/kratos)
 
-config file: [config.yaml](./kratos-config/config.yaml)
-identity schema: [identity.schema.json](./kratos-config/identity.schema.json)
+- config file: [config.yaml](./kratos-config/config.yaml)
+- identity schema: [identity.schema.json](./kratos-config/identity.schema.json)
 
 ## [ORY Hydra](https://www.ory.com/hydra)
 
