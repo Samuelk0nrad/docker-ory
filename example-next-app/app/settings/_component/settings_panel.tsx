@@ -24,7 +24,6 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
 
   const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
     e?.preventDefault();
-    const success = await authFlow.updateFlow();
 
     if (authFlow.data.password !== authFlow.data.uiOnly?.confirmPassword) {
       authFlow.setMessages('confirmPassword', {
@@ -35,6 +34,8 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
     } else {
       authFlow.setMessages('confirmPassword', { text: '', type: 'info' });
     }
+
+    const success = await authFlow.updateFlow();
 
     if (success) {
       authFlow.resetFlowData();
@@ -55,7 +56,9 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
         setConfirmPassword={(value) =>
           authFlow.setData('uiOnly.confirmPassword', value)
         }
-        messages={authFlow.messages}
+        messagesPassword={authFlow.messages.password}
+        messagesConfirmPassword={authFlow.messages.confirmPassword}
+        messagesGeneral={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );

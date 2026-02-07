@@ -1,13 +1,5 @@
 'use client';
 
-import { Button } from '@/components/ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
 import {
   Field,
   FieldDescription,
@@ -15,114 +7,103 @@ import {
   FieldLabel,
 } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
-import { Label } from './ui/label';
-import { Spinner } from './ui/spinner';
+import { UiTextMessage } from '@/ory/kratos/flow/types/UiTextMessage';
+import { FlowForm } from '../ory/kratos/ui/flow_form';
+import { Message } from './ui/message';
+
+interface LoginFormProps {
+  /** Form submission handler */
+  submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
+
+  /** Current input values */
+  email: string;
+  password: string;
+
+  /** Callback to update values */
+  setEmail: (email: string) => void;
+  setPassword: (password: string) => void;
+
+  /** Validation and status messages for the form */
+  messagesEmail?: UiTextMessage;
+  messagesPassword?: UiTextMessage;
+  messagesGeneral?: UiTextMessage;
+
+  /** Whether the form is in a loading state */
+  isLoading: boolean;
+}
 
 export function LoginForm({
   submitForm,
-  identifier,
-  setIdentifier,
+  email,
+  setEmail,
   password,
   setPassword,
-  messages,
+  messagesEmail,
+  messagesPassword,
+  messagesGeneral,
   isLoading,
-}: {
-  submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-  identifier: string;
-  setIdentifier: (identifier: string) => void;
-  password: string;
-  setPassword: (password: string) => void;
-  messages: any;
-  isLoading: boolean;
-}) {
+}: LoginFormProps) {
   return (
-    <div className={'flex flex-col gap-6'}>
-      <Card>
-        <CardHeader>
-          <CardTitle>Login to your account</CardTitle>
-          <CardDescription>
-            Enter your email below to login to your account
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={submitForm}>
-            <FieldGroup>
-              <Field>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="max@mustermann.com"
-                  required
-                  value={identifier}
-                  onChange={(event) => {
-                    setIdentifier(event.target.value);
-                  }}
-                />
-                {messages.identifier && (
-                  <Label
-                    className={
-                      messages.identifier.type === 'error' ? 'text-red-500' : ''
-                    }
-                  >
-                    {messages.identifier?.text}
-                  </Label>
-                )}
-              </Field>
-              <Field>
-                <div className="flex items-center">
-                  <FieldLabel htmlFor="password">Password</FieldLabel>
-                  <a
-                    href="/auth/recovery"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </a>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(event) => {
-                    setPassword(event.target.value);
-                  }}
-                />
-                {messages.password && (
-                  <Label
-                    className={
-                      messages.password.type === 'error' ? 'text-red-500' : ''
-                    }
-                  >
-                    {messages.password?.text}
-                  </Label>
-                )}
-              </Field>
-              <Field>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading ? <Spinner /> : 'Login'}
-                </Button>
-                {messages.general && (
-                  <Label
-                    className={
-                      messages.general.type === 'error' ? 'text-red-500' : ''
-                    }
-                  >
-                    {messages.general.text}
-                  </Label>
-                )}
-                <Button variant="outline" type="button">
-                  Login with Google
-                </Button>
-                <FieldDescription className="text-center">
-                  Don&apos;t have an account?{' '}
-                  <a href="/auth/registration">Sign up</a>
-                </FieldDescription>
-              </Field>
-            </FieldGroup>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <FlowForm
+      title="Login to your account"
+      description="Enter your email below to login to your account"
+      submitForm={submitForm}
+      messagesGeneral={messagesGeneral}
+      buttonText="Login"
+      isLoading={isLoading}
+      bottomContent={
+        <>
+          <div className="flex gap-2 flex-col">
+            <button
+              type="button"
+              className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
+            >
+              Login with Google
+            </button>
+          </div>
+          <FieldDescription className="text-center">
+            Don&apos;t have an account? <a href="/auth/registration">Sign up</a>
+          </FieldDescription>
+        </>
+      }
+    >
+      <FieldGroup>
+        <Field>
+          <FieldLabel htmlFor="email">Email</FieldLabel>
+          <Input
+            id="email"
+            type="email"
+            placeholder="max@mustermann.com"
+            required
+            value={email}
+            onChange={(event) => {
+              setEmail(event.target.value);
+            }}
+          />
+          <Message message={messagesEmail} />
+        </Field>
+        <Field>
+          <div className="flex items-center">
+            <FieldLabel htmlFor="password">Password</FieldLabel>
+            <a
+              href="/auth/recovery"
+              className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
+            >
+              Forgot your password?
+            </a>
+          </div>
+          <Input
+            id="password"
+            type="password"
+            required
+            value={password}
+            onChange={(event) => {
+              setPassword(event.target.value);
+            }}
+          />
+          <Message message={messagesPassword} />
+        </Field>
+      </FieldGroup>
+    </FlowForm>
   );
 }

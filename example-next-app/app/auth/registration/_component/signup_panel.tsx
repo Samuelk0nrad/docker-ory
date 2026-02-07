@@ -50,7 +50,11 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
       setConfirmPassword={(value) =>
         authFlow.setData('uiOnly.confirmPassword', value)
       }
-      messages={authFlow.messages}
+      messagesConfirmPassword={authFlow.messages.confirmPassword}
+      messagesEmail={authFlow.messages.email}
+      messagesName={authFlow.messages.name}
+      messagesPassword={authFlow.messages.password}
+      messagesGeneral={authFlow.messages.general}
       isLoading={authFlow.isLoading}
     />
   );

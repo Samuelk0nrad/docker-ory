@@ -1,6 +1,25 @@
-export function getCsrfToken(flow: any) {
-  return flow.ui.nodes.find(
-    (node: any) =>
-      node.type === 'input' && node.attributes.name === 'csrf_token'
-  )?.attributes.value;
+import { UiNode } from '@ory/client';
+
+export function getCsrfToken(flow: any): {
+  error?: string;
+  csrf_token?: string;
+} {
+  if (!flow?.ui?.nodes || !Array.isArray(flow.ui.nodes)) {
+    return { error: 'Invalid flow structure: missing or invalid ui.nodes' };
+  }
+
+  try {
+    const csrfToken = flow.ui.nodes.find(
+      (node: UiNode) =>
+        node.type === 'input' &&
+        node.attributes.node_type === 'input' &&
+        node.attributes.name === 'csrf_token'
+    )?.attributes.value;
+    if (!csrfToken) {
+      return { error: 'CSRF token not found' };
+    }
+    return { csrf_token: csrfToken };
+  } catch (error) {
+    return { error: 'An error occurred while retrieving the CSRF token' };
+  }
 }

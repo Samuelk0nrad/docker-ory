@@ -3,7 +3,6 @@ import {
   UiContainer,
   UiNode,
   UiNodeInputAttributes,
-  UiText,
 } from '@ory/client';
 import { AxiosError } from 'axios';
 import { useEffect, useState } from 'react';
@@ -11,6 +10,7 @@ import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
 import { FlowTypeEnum } from './flow/types/FlowTypes';
 import { GenericFlowResponse } from './flow/types/GenericFlowResponse';
+import { UiTextMessage } from './flow/types/UiTextMessage';
 import { UpdateFlowBodyMap } from './flow/types/UpdateFlowBodyMap';
 import { getCsrfToken } from './utils';
 
@@ -22,14 +22,13 @@ export function useAuthFlow<
   const [data, setData] = useState<Partial<B>>(
     method ? ({ method } as unknown as Partial<B>) : {}
   );
-  const [messages, setMessages] = useState<
-    Record<string, UiText | { text: string; type: string }>
-  >({});
+  const [messages, setMessages] = useState<Record<string, UiTextMessage>>({});
   const [isLoading, setIsLoading] = useState(false);
 
   async function startFlow(): Promise<boolean> {
     let res = true;
     try {
+      setIsLoading(true);
       if (flowId) {
         await flow.getFlow(flowId);
       } else {
@@ -38,23 +37,28 @@ export function useAuthFlow<
       setCsrfToken();
       handleResponse(flow.flow as unknown as GenericFlowResponse);
     } catch (error) {
-      if (error instanceof AxiosError) {
-        const responseData = error.response?.data as GenericFlowResponse;
-        if (responseData?.error || responseData?.ui) {
-          handleResponse(responseData);
-        } else {
-          updateMessages('general', {
-            text: 'An error occurred, please try again later',
-            type: 'error',
-          });
-        }
+      const isAxiosError = error instanceof AxiosError;
+      const responseData = isAxiosError
+        ? (error.response?.data as GenericFlowResponse)
+        : null;
+
+      if (responseData?.error || responseData?.ui) {
+        handleResponse(responseData);
       } else {
+        const errorMessage = isAxiosError
+          ? error.message || 'Network error occurred'
+          : error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred';
+
         updateMessages('general', {
-          text: 'An unexpected error occurred',
+          text: errorMessage,
           type: 'error',
         });
       }
       res = false;
+    } finally {
+      setIsLoading(false);
     }
     return res;
   }
@@ -92,7 +96,7 @@ export function useAuthFlow<
     });
   }
 
-  function updateMessages(key: string, value: Pick<UiText, 'text' | 'type'>) {
+  function updateMessages(key: string, value: UiTextMessage) {
     setMessages((prev) => ({ ...prev, [key]: value }));
   }
 
@@ -143,7 +147,7 @@ export function useAuthFlow<
       const responseUi: UiContainer = response.ui;
       if (responseUi.messages && responseUi.messages.length > 0) {
         const msg = responseUi.messages[0];
-        updateMessages('general', msg);
+        updateMessages('general', msg as UiTextMessage);
       }
       if (responseUi.nodes && responseUi.nodes.length > 0) {
         responseUi.nodes.forEach((node: UiNode) => {
@@ -151,7 +155,7 @@ export function useAuthFlow<
             const attributes = node.attributes as UiNodeInputAttributes;
             const normalizedKey = normalizeMessageKey(attributes.name);
             if (node.messages.length > 0) {
-              const msg = node.messages[0];
+              const msg = node.messages[0] as UiTextMessage;
               setMessages((prev) => ({
                 ...prev,
                 [normalizedKey]: msg,
@@ -168,16 +172,18 @@ export function useAuthFlow<
     for (const c of continueWith) {
       if (c.action === 'show_recovery_ui') {
         window.location.href =
-          c.flow.url ?? `http://localhost:3000/auth/recovery?flow=${c.flow.id}`;
+          c.flow.url ??
+          `${process.env.NEXT_PUBLIC_APP_URL}/auth/recovery?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_settings_ui') {
         window.location.href =
-          c.flow.url ?? `http://localhost:3000/auth/settings?flow=${c.flow.id}`;
+          c.flow.url ??
+          `${process.env.NEXT_PUBLIC_APP_URL}/auth/settings?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_verification_ui') {
         window.location.href =
           c.flow.url ??
-          `http://localhost:3000/auth/verification?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification?flow=${c.flow.id}`;
         return;
       }
     }
@@ -199,8 +205,12 @@ export function useAuthFlow<
 
   function setCsrfToken() {
     if (flow.flow) {
-      const csrf_token = getCsrfToken(flow.flow);
-      updateData('csrf_token', csrf_token);
+      const { csrf_token, error } = getCsrfToken(flow.flow);
+      if (error) {
+        updateMessages('general', { text: error, type: 'error' });
+      } else if (csrf_token) {
+        updateData('csrf_token', csrf_token);
+      }
     }
   }
 

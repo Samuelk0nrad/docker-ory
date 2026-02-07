@@ -33,7 +33,8 @@ export function RecoveryPanel({ flowId }: { flowId?: string }) {
         submitForm={submitForm}
         email={authFlow.data.email || ''}
         setEmail={(value) => authFlow.setData('email', value)}
-        messages={authFlow.messages}
+        messagesEmail={authFlow.messages.email}
+        messagesGeneral={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );
@@ -45,7 +46,8 @@ export function RecoveryPanel({ flowId }: { flowId?: string }) {
         submitForm={submitForm}
         code={authFlow.data.code || ''}
         setCode={(value) => authFlow.setData('code', value)}
-        messages={authFlow.messages}
+        messagesCode={authFlow.messages.code}
+        messagesGeneral={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );

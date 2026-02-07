@@ -1,13 +1,21 @@
-import { Button } from './ui/button';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from './ui/card';
-import { Field, FieldGroup } from './ui/field';
-import { Spinner } from './ui/spinner';
+'use client';
+
+import { FlowForm } from '../ory/kratos/ui/flow_form';
+
+interface OneButtonFormProps {
+  /** The title displayed in the card header */
+  title: string;
+  /** The description displayed below the title */
+  description: string;
+  /** Button click handler */
+  onClick: () => void;
+
+  /** The text displayed on the button */
+  buttonText: string;
+
+  /** Whether the form is in a loading state */
+  isLoading: boolean;
+}
 
 export function OneButtonForm({
   title,
@@ -15,30 +23,17 @@ export function OneButtonForm({
   buttonText,
   onClick,
   isLoading,
-}: {
-  title: string;
-  description: string;
-  buttonText: string;
-  onClick: () => void;
-  isLoading?: boolean;
-}) {
+}: OneButtonFormProps) {
   return (
-    <div className={'flex flex-col gap-6'}>
-      <Card>
-        <CardHeader>
-          <CardTitle>{title}</CardTitle>
-          <CardDescription>{description}</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <FieldGroup>
-            <Field>
-              <Button type="button" onClick={onClick} disabled={isLoading}>
-                {isLoading ? <Spinner /> : buttonText}
-              </Button>
-            </Field>
-          </FieldGroup>
-        </CardContent>
-      </Card>
-    </div>
+    <FlowForm
+      title={title}
+      description={description}
+      submitForm={(e) => {
+        e?.preventDefault();
+        onClick();
+      }}
+      buttonText={buttonText}
+      isLoading={isLoading}
+    />
   );
 }

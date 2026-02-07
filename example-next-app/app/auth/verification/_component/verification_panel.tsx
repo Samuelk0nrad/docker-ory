@@ -50,7 +50,8 @@ export function VerificationPanel({ flowId }: { flowId?: string }) {
         submitForm={submitForm}
         code={authFlow.data.code || ''}
         setCode={(value) => authFlow.setData('code', value)}
-        messages={authFlow.messages}
+        messagesCode={authFlow.messages.code}
+        messagesGeneral={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );
