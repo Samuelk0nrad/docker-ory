@@ -9,18 +9,19 @@ import { Message } from './ui/message';
 interface PasswordChangeFormProps {
   /** Form submission handler */
   submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-  /** Current input values */
-  password: string;
-  confirmPassword: string;
-
-  /** Callback to update values */
-  setPassword: (password: string) => void;
-  setConfirmPassword: (confirmPassword: string) => void;
-
-  /** Validation and status messages for the form */
-  messagesPassword?: UiTextMessage;
-  messagesConfirmPassword?: UiTextMessage;
-  messagesGeneral?: UiTextMessage;
+  data: {
+    password: {
+      value: string;
+      setValue: (password: string) => void;
+      message?: UiTextMessage;
+    };
+    confirmPassword: {
+      value: string;
+      setValue: (confirmPassword: string) => void;
+      message?: UiTextMessage;
+    };
+  };
+  generalMessage?: UiTextMessage;
 
   /** Whether the form is in a loading state */
   isLoading: boolean;
@@ -28,13 +29,8 @@ interface PasswordChangeFormProps {
 
 export function PasswordChangeForm({
   submitForm,
-  password,
-  setPassword,
-  confirmPassword,
-  setConfirmPassword,
-  messagesPassword,
-  messagesConfirmPassword,
-  messagesGeneral,
+  data: { password, confirmPassword },
+  generalMessage,
   isLoading,
 }: PasswordChangeFormProps) {
   return (
@@ -42,7 +38,7 @@ export function PasswordChangeForm({
       title="Change your password"
       description="Enter your new password below to update your account, or use google to login."
       submitForm={submitForm}
-      messagesGeneral={messagesGeneral}
+      messagesGeneral={generalMessage}
       buttonText="Change Password"
       isLoading={isLoading}
       bottomContent={
@@ -63,12 +59,12 @@ export function PasswordChangeForm({
             id="password"
             type="password"
             required
-            value={password}
+            value={password.value}
             onChange={(event) => {
-              setPassword(event.target.value);
+              password.setValue(event.target.value);
             }}
           />
-          <Message message={messagesPassword} />
+          <Message message={password.message} />
         </Field>
         <Field>
           <div className="flex items-center">
@@ -78,12 +74,12 @@ export function PasswordChangeForm({
             id="confirmPassword"
             type="password"
             required
-            value={confirmPassword}
+            value={confirmPassword.value}
             onChange={(event) => {
-              setConfirmPassword(event.target.value);
+              confirmPassword.setValue(event.target.value);
             }}
           />
-          <Message message={messagesConfirmPassword} />
+          <Message message={confirmPassword.message} />
         </Field>
       </FieldGroup>
     </FlowForm>

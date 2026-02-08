@@ -14,24 +14,29 @@ import { Message } from './ui/message';
 interface SignupFormProps {
   /** Form submission handler */
   submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-  /** Current input values */
-  email: string;
-  name: string;
-  password: string;
-  confirmPassword: string;
-
-  /** Callback to update values */
-  setEmail: (email: string) => void;
-  setName: (name: string) => void;
-  setPassword: (password: string) => void;
-  setConfirmPassword: (confirmPassword: string) => void;
-
-  /** Validation and status messages for the form */
-  messagesEmail?: UiTextMessage;
-  messagesName?: UiTextMessage;
-  messagesPassword?: UiTextMessage;
-  messagesConfirmPassword?: UiTextMessage;
-  messagesGeneral?: UiTextMessage;
+  data: {
+    email: {
+      value: string;
+      setValue: (email: string) => void;
+      message?: UiTextMessage;
+    };
+    name: {
+      value: string;
+      setValue: (name: string) => void;
+      message?: UiTextMessage;
+    };
+    password: {
+      value: string;
+      setValue: (password: string) => void;
+      message?: UiTextMessage;
+    };
+    confirmPassword: {
+      value: string;
+      setValue: (confirmPassword: string) => void;
+      message?: UiTextMessage;
+    };
+  };
+  generalMessage?: UiTextMessage;
 
   /** Whether the form is in a loading state */
   isLoading: boolean;
@@ -39,19 +44,8 @@ interface SignupFormProps {
 
 export function SignupForm({
   submitForm,
-  email,
-  setEmail,
-  name,
-  setName,
-  password,
-  setPassword,
-  confirmPassword,
-  setConfirmPassword,
-  messagesEmail,
-  messagesName,
-  messagesPassword,
-  messagesConfirmPassword,
-  messagesGeneral,
+  data: { email, name, password, confirmPassword },
+  generalMessage,
   isLoading,
 }: SignupFormProps) {
   return (
@@ -59,7 +53,7 @@ export function SignupForm({
       title="Create an account"
       description="Enter your information below to create your account"
       submitForm={submitForm}
-      messagesGeneral={messagesGeneral}
+      messagesGeneral={generalMessage}
       buttonText="Create Account"
       isLoading={isLoading}
       bottomContent={
@@ -83,11 +77,11 @@ export function SignupForm({
             id="name"
             type="text"
             placeholder="John Doe"
-            value={name}
-            onChange={(event) => setName(event.target.value)}
+            value={name.value}
+            onChange={(event) => name.setValue(event.target.value)}
             required
           />
-          <Message message={messagesName} />
+          <Message message={name.message} />
         </Field>
         <Field>
           <FieldLabel htmlFor="email">Email</FieldLabel>
@@ -96,11 +90,11 @@ export function SignupForm({
             type="email"
             placeholder="m@example.com"
             required
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
+            value={email.value}
+            onChange={(event) => email.setValue(event.target.value)}
           />
           <Message
-            message={messagesEmail}
+            message={email.message}
             content={
               <FieldDescription>
                 We&apos;ll use this to contact you. We will not share your email
@@ -115,11 +109,11 @@ export function SignupForm({
             id="password"
             type="password"
             required
-            value={password}
-            onChange={(event) => setPassword(event.target.value)}
+            value={password.value}
+            onChange={(event) => password.setValue(event.target.value)}
           />
           <Message
-            message={messagesPassword}
+            message={password.message}
             content={
               <FieldDescription>
                 Must be at least 8 characters long.
@@ -133,10 +127,10 @@ export function SignupForm({
             id="confirm-password"
             type="password"
             required
-            value={confirmPassword}
-            onChange={(event) => setConfirmPassword(event.target.value)}
+            value={confirmPassword.value}
+            onChange={(event) => confirmPassword.setValue(event.target.value)}
           />
-          <Message message={messagesConfirmPassword} />
+          <Message message={confirmPassword.message} />
         </Field>
       </FieldGroup>
     </FlowForm>

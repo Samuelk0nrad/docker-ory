@@ -12,14 +12,14 @@ interface EmailFormProps {
   description: string;
   /** Form submission handler */
   submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-  /** Current email input value */
-  email: string;
-  /** Callback to update email value */
-  setEmail: (email: string) => void;
-
-  /** Validation and status messages for the form */
-  messagesEmail?: UiTextMessage;
-  messagesGeneral?: UiTextMessage;
+  data: {
+    email: {
+      value: string;
+      setValue: (email: string) => void;
+      message?: UiTextMessage;
+    };
+  };
+  generalMessage?: UiTextMessage;
 
   /** Whether the form is in a loading state */
   isLoading: boolean;
@@ -29,10 +29,8 @@ export function EmailForm({
   title,
   description,
   submitForm,
-  email,
-  setEmail,
-  messagesEmail,
-  messagesGeneral,
+  data: { email },
+  generalMessage,
   isLoading,
 }: EmailFormProps) {
   return (
@@ -40,7 +38,7 @@ export function EmailForm({
       title={title}
       description={description}
       submitForm={submitForm}
-      messagesGeneral={messagesGeneral}
+      messagesGeneral={generalMessage}
       buttonText="Recover"
       isLoading={isLoading}
       bottomContent={
@@ -50,7 +48,11 @@ export function EmailForm({
         </FieldDescription>
       }
     >
-      <EmailInput value={email} setValue={setEmail} message={messagesEmail} />
+      <EmailInput
+        value={email.value}
+        setValue={email.setValue}
+        message={email.message}
+      />
     </FlowForm>
   );
 }

@@ -50,15 +50,20 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
     return (
       <PasswordChangeForm
         submitForm={submitForm}
-        password={authFlow.data.password || ''}
-        setPassword={(value) => authFlow.setData('password', value)}
-        confirmPassword={authFlow.data.uiOnly?.confirmPassword || ''}
-        setConfirmPassword={(value) =>
-          authFlow.setData('uiOnly.confirmPassword', value)
-        }
-        messagesPassword={authFlow.messages.password}
-        messagesConfirmPassword={authFlow.messages.confirmPassword}
-        messagesGeneral={authFlow.messages.general}
+        data={{
+          password: {
+            value: authFlow.data.password || '',
+            setValue: (value) => authFlow.setData('password', value),
+            message: authFlow.messages.password,
+          },
+          confirmPassword: {
+            value: authFlow.data.uiOnly?.confirmPassword || '',
+            setValue: (value) =>
+              authFlow.setData('uiOnly.confirmPassword', value),
+            message: authFlow.messages.confirmPassword,
+          },
+        }}
+        generalMessage={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );

@@ -14,19 +14,19 @@ import { Message } from './ui/message';
 interface LoginFormProps {
   /** Form submission handler */
   submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-
-  /** Current input values */
-  email: string;
-  password: string;
-
-  /** Callback to update values */
-  setEmail: (email: string) => void;
-  setPassword: (password: string) => void;
-
-  /** Validation and status messages for the form */
-  messagesEmail?: UiTextMessage;
-  messagesPassword?: UiTextMessage;
-  messagesGeneral?: UiTextMessage;
+  data: {
+    email: {
+      value: string;
+      setValue: (email: string) => void;
+      message?: UiTextMessage;
+    };
+    password: {
+      value: string;
+      setValue: (password: string) => void;
+      message?: UiTextMessage;
+    };
+  };
+  generalMessage?: UiTextMessage;
 
   /** Whether the form is in a loading state */
   isLoading: boolean;
@@ -34,13 +34,8 @@ interface LoginFormProps {
 
 export function LoginForm({
   submitForm,
-  email,
-  setEmail,
-  password,
-  setPassword,
-  messagesEmail,
-  messagesPassword,
-  messagesGeneral,
+  data: { email, password },
+  generalMessage,
   isLoading,
 }: LoginFormProps) {
   return (
@@ -48,7 +43,7 @@ export function LoginForm({
       title="Login to your account"
       description="Enter your email below to login to your account"
       submitForm={submitForm}
-      messagesGeneral={messagesGeneral}
+      messagesGeneral={generalMessage}
       buttonText="Login"
       isLoading={isLoading}
       bottomContent={
@@ -75,12 +70,12 @@ export function LoginForm({
             type="email"
             placeholder="max@mustermann.com"
             required
-            value={email}
+            value={email.value}
             onChange={(event) => {
-              setEmail(event.target.value);
+              email.setValue(event.target.value);
             }}
           />
-          <Message message={messagesEmail} />
+          <Message message={email.message} />
         </Field>
         <Field>
           <div className="flex items-center">
@@ -96,12 +91,12 @@ export function LoginForm({
             id="password"
             type="password"
             required
-            value={password}
+            value={password.value}
             onChange={(event) => {
-              setPassword(event.target.value);
+              password.setValue(event.target.value);
             }}
           />
-          <Message message={messagesPassword} />
+          <Message message={password.message} />
         </Field>
       </FieldGroup>
     </FlowForm>

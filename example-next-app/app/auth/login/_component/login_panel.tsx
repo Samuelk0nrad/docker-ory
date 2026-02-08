@@ -28,13 +28,19 @@ export function LoginPanel({ flowId }: { flowId?: string }) {
   return (
     <LoginForm
       submitForm={submitForm}
-      email={authFlow.data.identifier || ''}
-      setEmail={(value) => authFlow.setData('identifier', value)}
-      password={authFlow.data.password || ''}
-      setPassword={(value) => authFlow.setData('password', value)}
-      messagesGeneral={authFlow.messages.general}
-      messagesEmail={authFlow.messages.email}
-      messagesPassword={authFlow.messages.password}
+      data={{
+        email: {
+          value: authFlow.data.identifier || '',
+          setValue: (value) => authFlow.setData('identifier', value),
+          message: authFlow.messages.email,
+        },
+        password: {
+          value: authFlow.data.password || '',
+          setValue: (value) => authFlow.setData('password', value),
+          message: authFlow.messages.password,
+        },
+      }}
+      generalMessage={authFlow.messages.general}
       isLoading={authFlow.isLoading}
     />
   );

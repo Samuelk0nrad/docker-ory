@@ -48,10 +48,14 @@ export function VerificationPanel({ flowId }: { flowId?: string }) {
         title="Enter verification code"
         description="We sent a 6-digit code to your email."
         submitForm={submitForm}
-        code={authFlow.data.code || ''}
-        setCode={(value) => authFlow.setData('code', value)}
-        messagesCode={authFlow.messages.code}
-        messagesGeneral={authFlow.messages.general}
+        data={{
+          code: {
+            value: authFlow.data.code || '',
+            setValue: (value) => authFlow.setData('code', value),
+            message: authFlow.messages.code,
+          },
+        }}
+        generalMessage={authFlow.messages.general}
         isLoading={authFlow.isLoading}
       />
     );

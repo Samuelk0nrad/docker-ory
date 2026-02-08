@@ -17,14 +17,14 @@ interface OTPFormProps {
   description: string;
   /** Form submission handler */
   submitForm: (e?: React.SubmitEvent<HTMLFormElement>) => void;
-  /** Current code input value */
-  code: string;
-  /** Callback to update code value */
-  setCode: (code: string) => void;
-
-  /** Validation and status messages for the form */
-  messagesCode?: UiTextMessage;
-  messagesGeneral?: UiTextMessage;
+  data: {
+    code: {
+      value: string;
+      setValue: (code: string) => void;
+      message?: UiTextMessage;
+    };
+  };
+  generalMessage?: UiTextMessage;
 
   /** Whether the form is in a loading state */
   isLoading: boolean;
@@ -34,10 +34,8 @@ export function OTPForm({
   title,
   description,
   submitForm,
-  code,
-  setCode,
-  messagesCode,
-  messagesGeneral,
+  data: { code },
+  generalMessage,
   isLoading,
 }: OTPFormProps) {
   return (
@@ -45,7 +43,7 @@ export function OTPForm({
       title={title}
       description={description}
       submitForm={submitForm}
-      messagesGeneral={messagesGeneral}
+      messagesGeneral={generalMessage}
       buttonText="Verify"
       isLoading={isLoading}
       bottomContent={
@@ -61,9 +59,9 @@ export function OTPForm({
             maxLength={6}
             id="otp"
             required
-            value={code}
+            value={code.value}
             onChange={(value) => {
-              setCode(value);
+              code.setValue(value);
             }}
           >
             <InputOTPGroup className="gap-2.5 *:data-[slot=input-otp-slot]:rounded-md *:data-[slot=input-otp-slot]:border">

@@ -40,21 +40,30 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
   return (
     <SignupForm
       submitForm={submitForm}
-      email={authFlow.data.traits?.email || ''}
-      setEmail={(value) => authFlow.setData('traits.email', value)}
-      name={authFlow.data.traits?.name || ''}
-      setName={(value) => authFlow.setData('traits.name', value)}
-      password={authFlow.data.password || ''}
-      setPassword={(value) => authFlow.setData('password', value)}
-      confirmPassword={authFlow.data.uiOnly?.confirmPassword || ''}
-      setConfirmPassword={(value) =>
-        authFlow.setData('uiOnly.confirmPassword', value)
-      }
-      messagesConfirmPassword={authFlow.messages.confirmPassword}
-      messagesEmail={authFlow.messages.email}
-      messagesName={authFlow.messages.name}
-      messagesPassword={authFlow.messages.password}
-      messagesGeneral={authFlow.messages.general}
+      data={{
+        email: {
+          value: authFlow.data.traits?.email || '',
+          setValue: (value) => authFlow.setData('traits.email', value),
+          message: authFlow.messages.email,
+        },
+        name: {
+          value: authFlow.data.traits?.name || '',
+          setValue: (value) => authFlow.setData('traits.name', value),
+          message: authFlow.messages.name,
+        },
+        password: {
+          value: authFlow.data.password || '',
+          setValue: (value) => authFlow.setData('password', value),
+          message: authFlow.messages.password,
+        },
+        confirmPassword: {
+          value: authFlow.data.uiOnly?.confirmPassword || '',
+          setValue: (value) =>
+            authFlow.setData('uiOnly.confirmPassword', value),
+          message: authFlow.messages.confirmPassword,
+        },
+      }}
+      generalMessage={authFlow.messages.general}
       isLoading={authFlow.isLoading}
     />
   );
