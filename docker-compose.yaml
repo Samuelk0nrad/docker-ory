@@ -104,6 +104,8 @@ services:
     environment:
       DSN: ${KRATOS_DSN}
       SECRETS_DEFAULT: ${KRATOS_SYSTEM_SECRET}
+      GOOGLE_OAUTH_CLIENT_ID: ${GOOGLE_OAUTH2_CLIENT_ID}
+      GOOGLE_OAUTH_CLIENT_SECRET: ${GOOGLE_OAUTH2_CLIENT_SECRET}
     volumes:
       - ./kratos-config:/etc/config/kratos
 
