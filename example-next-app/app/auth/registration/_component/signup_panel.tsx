@@ -3,6 +3,7 @@
 import { SignupForm } from '@/components/signup_form';
 import { SelfServiceFlow } from '@/ory/kratos/flow/SelfServiceFlow';
 import { FlowTypeEnum } from '@/ory/kratos/flow/types/FlowTypes';
+import { OIDCProvider } from '@/ory/kratos/flow/types/Provider';
 import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { UpdateRegistrationFlowWithPasswordMethod } from '@ory/client';
 
@@ -23,7 +24,11 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
     'password'
   );
 
-  const submitForm = async (e?: React.SubmitEvent<HTMLFormElement>) => {
+  const submitForm = async (
+    e?: React.SubmitEvent<HTMLFormElement>,
+    method?: 'password' | 'oidc',
+    provider?: OIDCProvider
+  ) => {
     e?.preventDefault();
 
     if (authFlow.data.password !== authFlow.data.uiOnly?.confirmPassword) {
@@ -34,7 +39,9 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
       return;
     }
 
-    authFlow.updateFlow();
+    method === 'password'
+      ? await authFlow.updateFlow()
+      : await authFlow.updateFlow(authFlow.createProviderSubmitData(provider!));
   };
 
   return (
@@ -62,6 +69,11 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
             authFlow.setData('uiOnly.confirmPassword', value),
           message: authFlow.messages.confirmPassword,
         },
+      }}
+      oidc={{
+        providers: authFlow.mapProvider(),
+        onSubmit: (provider) => submitForm(undefined, 'oidc', provider),
+        message: authFlow.messages.oidc,
       }}
       generalMessage={authFlow.messages.general}
       isLoading={authFlow.isLoading}

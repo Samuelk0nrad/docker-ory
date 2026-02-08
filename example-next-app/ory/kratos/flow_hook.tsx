@@ -10,6 +10,7 @@ import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
 import { FlowTypeEnum } from './flow/types/FlowTypes';
 import { GenericFlowResponse } from './flow/types/GenericFlowResponse';
+import { OIDCProvider } from './flow/types/Provider';
 import { UiTextMessage } from './flow/types/UiTextMessage';
 import { UpdateFlowBodyMap } from './flow/types/UpdateFlowBodyMap';
 import { getCsrfToken } from './utils';
@@ -100,13 +101,13 @@ export function useAuthFlow<
     setMessages((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function updateFlow(): Promise<boolean> {
+  async function updateFlow(rdata?: UpdateFlowBodyMap[T]): Promise<boolean> {
     setIsLoading(true);
     let res = true;
     try {
       if (flow) {
         const result = await flow.updateFlow(
-          data as unknown as UpdateFlowBodyMap[T]
+          (rdata ?? data) as unknown as UpdateFlowBodyMap[T]
         );
 
         handleResponse(result.data as unknown as GenericFlowResponse);
@@ -225,6 +226,49 @@ export function useAuthFlow<
     updateData('method', method);
   }
 
+  /**
+   * This function maps the flow ui nodes to OIDCProvider objects they
+   * are been used in the UI layer
+   *
+   * Nods are filtered by group 'oidc' and node_type 'input' and only
+   * defined providers (in the OIDCProvider type) are returned
+   * @returns Array of OIDCProvider objects or empty array if no providers are found
+   */
+  function mapProvider(): OIDCProvider[] {
+    // TODO: more typesave
+    const oidcInputNodes = flow.flow?.ui?.nodes?.filter(
+      (n) => n.group === 'oidc' && n.attributes.node_type === 'input'
+    ) as UiNode[];
+
+    const validatedProviderNodes = oidcInputNodes?.filter(
+      (n) =>
+        n.meta.label?.context &&
+        (n.meta.label.context as any).provider &&
+        (n.meta.label.context as any).provider_id
+    );
+
+    const p = validatedProviderNodes?.map((n) => {
+      return {
+        id: (n.meta.label!.context as { provider: string; provider_id: string })
+          .provider_id,
+        name: (
+          n.meta.label!.context as { provider: string; provider_id: string }
+        ).provider,
+        value: (n.attributes as UiNodeInputAttributes).value as string,
+      };
+    });
+
+    return p.filter((p): p is OIDCProvider => !!p);
+  }
+
+  function createProviderSubmitData(provider: OIDCProvider): any {
+    return {
+      method: 'oidc',
+      provider: provider.value,
+      csrf_token: getCsrfToken(flow.flow)?.csrf_token,
+    };
+  }
+
   return {
     flow,
     data,
@@ -235,6 +279,8 @@ export function useAuthFlow<
     setData: updateData,
     setMessages: updateMessages,
     resetFlowData,
+    mapProvider,
     updateFlow,
+    createProviderSubmitData,
   };
 }

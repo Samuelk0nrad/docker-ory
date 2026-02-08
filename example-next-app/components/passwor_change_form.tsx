@@ -3,6 +3,7 @@
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
 import { UiTextMessage } from '@/ory/kratos/flow/types/UiTextMessage';
+import { ProviderSelection } from '@/ory/kratos/ui/components/provider_selection';
 import { FlowForm } from '../ory/kratos/ui/flow_form';
 import { Message } from './ui/message';
 
@@ -23,6 +24,15 @@ interface PasswordChangeFormProps {
   };
   generalMessage?: UiTextMessage;
 
+  oidc?: {
+    onSubmit: (id: string, name: string) => void;
+    message?: UiTextMessage;
+    providers: {
+      id: string;
+      name: 'google';
+    }[];
+  };
+
   /** Whether the form is in a loading state */
   isLoading: boolean;
 }
@@ -31,6 +41,7 @@ export function PasswordChangeForm({
   submitForm,
   data: { password, confirmPassword },
   generalMessage,
+  oidc,
   isLoading,
 }: PasswordChangeFormProps) {
   return (
@@ -42,12 +53,13 @@ export function PasswordChangeForm({
       buttonText="Change Password"
       isLoading={isLoading}
       bottomContent={
-        <button
-          type="button"
-          className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-        >
-          Login with Google
-        </button>
+        oidc && (
+          <ProviderSelection
+            providers={oidc.providers}
+            onSubmit={oidc.onSubmit}
+            message={oidc.message}
+          />
+        )
       }
     >
       <FieldGroup>

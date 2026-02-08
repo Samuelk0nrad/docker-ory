@@ -6,7 +6,9 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
+import { OIDCProvider } from '@/ory/kratos/flow/types/Provider';
 import { UiTextMessage } from '@/ory/kratos/flow/types/UiTextMessage';
+import { ProviderSelection } from '@/ory/kratos/ui/components/provider_selection';
 import { FlowForm } from '../ory/kratos/ui/flow_form';
 import { Input } from './ui/input';
 import { Message } from './ui/message';
@@ -38,6 +40,12 @@ interface SignupFormProps {
   };
   generalMessage?: UiTextMessage;
 
+  oidc?: {
+    onSubmit: (provider: OIDCProvider) => void;
+    message?: UiTextMessage;
+    providers: OIDCProvider[];
+  };
+
   /** Whether the form is in a loading state */
   isLoading: boolean;
 }
@@ -46,6 +54,7 @@ export function SignupForm({
   submitForm,
   data: { email, name, password, confirmPassword },
   generalMessage,
+  oidc,
   isLoading,
 }: SignupFormProps) {
   return (
@@ -58,12 +67,13 @@ export function SignupForm({
       isLoading={isLoading}
       bottomContent={
         <>
-          <button
-            type="button"
-            className="inline-flex items-center justify-center rounded-md border border-input bg-background px-3 py-2 text-sm font-medium ring-offset-background transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50"
-          >
-            Sign up with Google
-          </button>
+          {oidc && (
+            <ProviderSelection
+              providers={oidc.providers}
+              onSubmit={oidc.onSubmit}
+              message={oidc.message}
+            />
+          )}
           <FieldDescription className="px-6 text-center">
             Already have an account? <a href="/auth/login">Sign in</a>
           </FieldDescription>
