@@ -39,9 +39,12 @@ export function SignupPanel({ flowId }: { flowId?: string }) {
       return;
     }
 
-    method === 'password'
-      ? await authFlow.updateFlow()
-      : await authFlow.updateFlow(authFlow.createProviderSubmitData(provider!));
+    if (method === 'oidc' && provider) {
+      await authFlow.updateFlow(authFlow.createProviderSubmitData(provider));
+      return;
+    } else {
+      await authFlow.updateFlow();
+    }
   };
 
   return (
