@@ -16,10 +16,10 @@ serve:
     base_url: http://kratos:4434
 
 selfservice:
-  default_browser_return_url: http://127.0.0.1:3000/
+  default_browser_return_url: http://localhost:3000
   allowed_return_urls:
-    - http://127.0.0.1:3000/
-    - http://127.0.0.1:3000/auth/hydra/login
+    - http://localhost:3000/
+    - http://localhost:3000/auth/hydra/login
 
   flows:
     login:
@@ -53,12 +53,10 @@ selfservice:
     oidc:
       enabled: true
       config:
-        base_redirect_uri: http://localhost:3000/
+        base_redirect_uri: http://localhost:5545/
         providers:
           - id: google
             provider: google
-            client_id: ${GOOGLE_OAUTH_CLIENT_ID}
-            client_secret: ${GOOGLE_OAUTH_CLIENT_SECRET}
 
             issuer_url: https://accounts.google.com
             token_url: https://oauth2.googleapis.com/token
