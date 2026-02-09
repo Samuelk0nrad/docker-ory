@@ -42,7 +42,10 @@ export function VerificationPanel({ flowId }: { flowId?: string }) {
         isLoading={authFlow.isLoading}
       />
     );
-  } else if (authFlow.flow.flow?.state === 'choose_method') {
+  } else if (
+    authFlow.flow.flow?.state === 'choose_method' ||
+    authFlow.flow.flow?.state === 'sent_email'
+  ) {
     return (
       <OTPForm
         title="Enter verification code"
