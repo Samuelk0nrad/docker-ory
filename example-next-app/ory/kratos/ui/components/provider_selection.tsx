@@ -22,7 +22,7 @@ export function ProviderSelection({
         switch (provider.name) {
           case 'google':
             return (
-              <div className="flex gap-2 flex-col">
+              <div className="flex gap-2 flex-col" key={provider.name}>
                 <button
                   type="button"
                   onClick={() => onSubmit(provider)}

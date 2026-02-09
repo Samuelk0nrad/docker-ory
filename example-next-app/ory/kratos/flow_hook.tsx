@@ -258,7 +258,7 @@ export function useAuthFlow<
       };
     });
 
-    return p.filter((p): p is OIDCProvider => !!p);
+    return (p ?? []).filter((p): p is OIDCProvider => !!p);
   }
 
   function createProviderSubmitData(provider: OIDCProvider): any {
