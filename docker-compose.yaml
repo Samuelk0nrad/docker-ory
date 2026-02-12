@@ -58,6 +58,7 @@ services:
   ory-hydra:
     image: oryd/hydra:v1.10.6
     command: serve all  --dangerous-force-http
+    container_name: hydra
     networks:
       - ory-bridge
     ports:
@@ -72,6 +73,13 @@ services:
       URLS_SELF_ISSUER: https://localhost:5444/
       URLS_CONSENT: http://localhost:9020/consent
       URLS_LOGIN: http://localhost:9020/login
+
+  ory-hydra-setup:
+    build:
+      context: ./hydra-setup/
+      dockerfile: dockerfile
+    networks:
+      - ory-bridge
 
   ##################
   ####  kratos  ####
@@ -93,6 +101,7 @@ services:
   ory-kratos:
     image: oryd/kratos:v25.4.0
     command: serve --config /etc/config/kratos/config.yaml --watch-courier
+    container_name: kratos
     depends_on:
       ory-kratos-db-migration:
         condition: service_completed_successfully

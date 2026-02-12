@@ -1,0 +1,10 @@
+FROM curlimages/curl:latest
+
+COPY ./setup.sh /setup.sh
+
+#Run chmod +x /setup.sh
+
+ENTRYPOINT ["/setup.sh"]
+
+CMD tail -f /dev/null
+
