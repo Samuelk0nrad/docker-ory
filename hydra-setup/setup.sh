@@ -4,17 +4,13 @@ set -e
 HYDRA_ADMIN=http://hydra:4445
 
 echo "Waiting for Hydra to be ready..."
-TIMEOUT=60
-ELAPSED=0
-while [ $ELAPSED -lt $TIMEOUT ]; do
+for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16 17 18 19 20 21 22 23 24 25 26 27 28 29 30; do
   if curl -sf "$HYDRA_ADMIN/health/ready" >/dev/null 2>&1; then
     echo "Hydra is ready!"
     break
   fi
-  echo "Waiting for Hydra... ($ELAPSED/$TIMEOUT seconds)"
+  echo "Attempt $i: Hydra not ready yet, waiting..."
   sleep 2
-  ELAPSED=$((ELAPSED + 2))
-done
 done
 
 if ! curl -sf "$HYDRA_ADMIN/health/ready" >/dev/null 2>&1; then
