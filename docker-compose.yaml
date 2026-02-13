@@ -57,7 +57,7 @@ services:
 
   ory-hydra:
     image: oryd/hydra:v1.10.6
-    command: serve all  --dangerous-force-http
+    command: serve all --config /etc/config/hydra/config.yaml --dangerous-force-http
     container_name: hydra
     networks:
       - ory-bridge
@@ -70,16 +70,22 @@ services:
     environment:
       SECRETS_SYSTEM: ${HYDRA_SYSTEM_SECRET}
       DSN: ${HYDRA_DSN}
-      URLS_SELF_ISSUER: https://localhost:5444/
-      URLS_CONSENT: http://localhost:9020/consent
-      URLS_LOGIN: http://localhost:9020/login
+    volumes:
+      - ./hydra-config:/etc/config/hydra
+
 
   ory-hydra-setup:
-    build:
-      context: ./hydra-setup/
-      dockerfile: dockerfile
+    image: curlimages/curl:8.5.0
+    depends_on:
+      - ory-hydra
+    restart: "no"
     networks:
       - ory-bridge
+    entrypoint: ["/bin/sh"]
+    command: /etc/config/hydra/setup.sh
+    volumes:
+      - ./hydra-setup:/etc/config/hydra
+
 
   ##################
   ####  kratos  ####

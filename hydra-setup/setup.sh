@@ -1,16 +1,60 @@
-until curl -sf http://hydra:4445/health/ready; do
-  echo 'Waiting for Hydra...'
+#!/bin/sh
+set -e
+
+HYDRA_ADMIN=http://hydra:4445
+
+echo "Waiting for Hydra to be ready..."
+TIMEOUT=60
+ELAPSED=0
+while [ $ELAPSED -lt $TIMEOUT ]; do
+  if curl -sf "$HYDRA_ADMIN/health/ready" >/dev/null 2>&1; then
+    echo "Hydra is ready!"
+    break
+  fi
+  echo "Waiting for Hydra... ($ELAPSED/$TIMEOUT seconds)"
   sleep 2
+  ELAPSED=$((ELAPSED + 2))
+done
 done
 
-curl -sf http://hydra:4445/admin/clients/my-client ||
-  curl -X POST http://hydra:4445/admin/clients \
-    -H 'Content-Type: application/json' \
-    -d '{
-        \"client_id\": \"my-client\",
-        \"client_secret\": \"my-secret\",
-        \"grant_types\": [\"authorization_code\", \"refresh_token\"],
-        \"response_types\": [\"code\"],
-        \"scope\": \"openid offline\",
-        \"redirect_uris\": [\"http://localhost:3000/callback\"]
-      }'
+if ! curl -sf "$HYDRA_ADMIN/health/ready" >/dev/null 2>&1; then
+  echo "ERROR: Hydra did not become ready in time"
+  exit 1
+fi
+
+echo "Creating OAuth client..."
+CLIENT_ID="frontend-app"
+
+# Check if client already exists
+if curl -sf "$HYDRA_ADMIN/clients/$CLIENT_ID" >/dev/null 2>&1; then
+  echo "Client $CLIENT_ID already exists"
+  exit 0
+fi
+
+# Create the client
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$HYDRA_ADMIN/clients" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "client_id": "'"$CLIENT_ID"'",
+    "client_name": "Frontend App",
+    "client_secret": "dev-secret",
+    "grant_types": ["authorization_code", "refresh_token"],
+    "response_types": ["code"],
+    "scope": "openid profile email offline",
+    "redirect_uris": ["http://localhost:3000/callback", "http://localhost:3000/auth/callback"],
+    "token_endpoint_auth_method": "client_secret_basic"
+  }')
+
+HTTP_CODE=$(echo "$RESPONSE" | tail -n1)
+BODY=$(echo "$RESPONSE" | head -n-1)
+
+echo "HTTP Status: $HTTP_CODE"
+echo "Response: $BODY"
+
+if [ "$HTTP_CODE" = "201" ] || [ "$HTTP_CODE" = "200" ]; then
+  echo "OAuth client created successfully!"
+  exit 0
+else
+  echo "ERROR: Failed to create OAuth client"
+  exit 1
+fi

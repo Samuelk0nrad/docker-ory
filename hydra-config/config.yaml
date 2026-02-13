@@ -1,0 +1,54 @@
+serve:
+  public:
+    port: 4444
+    cors:
+      enabled: true
+      allowed_origins:
+        - http://localhost:3000
+      allowed_methods:
+        - POST
+        - GET
+        - PUT
+        - PATCH
+        - DELETE
+      allowed_headers:
+        - Authorization
+        - Content-Type
+      exposed_headers:
+        - Content-Type
+      allow_credentials: true
+  admin:
+    port: 4445
+  cookies:
+    same_site_mode: Lax
+
+urls:
+  self:
+    issuer: http://localhost:5444/
+  consent: http://localhost:3000/auth/hydra/consent
+  login: http://localhost:3000/auth/hydra/login
+  logout: http://localhost:3000/auth/hydra/logout
+
+oidc:
+  subject_identifiers:
+    supported_types:
+      - public
+    pairwise:
+      salt: youReallyNeedToChangeThis
+
+ttl:
+  login_consent_request: 1h
+  access_token: 1h
+  refresh_token: 720h
+  id_token: 1h
+  auth_code: 10m
+
+oauth2:
+  expose_internal_errors: true
+  hashers:
+    bcrypt:
+      cost: 10
+
+log:
+  level: info
+  format: json
