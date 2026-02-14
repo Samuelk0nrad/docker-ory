@@ -18,7 +18,7 @@ import { getCsrfToken } from './utils';
 export function useAuthFlow<
   T extends keyof FlowMap = FlowTypeEnum.Registration,
   B = UpdateFlowBodyMap[T],
->(flowType: SelfServiceFlow<T>, flowId?: string, method?: string) {
+>(flowType: SelfServiceFlow<T>, flowId?: string, method?: string, returnTo?: string) {
   const flow = flowType;
   const [data, setData] = useState<Partial<B>>(
     method ? ({ method } as unknown as Partial<B>) : {}
@@ -33,7 +33,7 @@ export function useAuthFlow<
       if (flowId) {
         await flow.getFlow(flowId);
       } else {
-        await flow.createFlow();
+        await flow.createFlow(returnTo);
       }
       setCsrfToken();
       handleResponse(flow.flow as unknown as GenericFlowResponse);

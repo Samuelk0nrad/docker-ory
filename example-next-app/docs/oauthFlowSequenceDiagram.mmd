@@ -1,0 +1,82 @@
+sequenceDiagram
+    autonumber
+    participant User as User Browser
+    participant NextJS as Next.js App<br/>(OAuth Client + BFF)
+    participant Hydra as Ory Hydra<br/>(OAuth2 Server)
+    participant Kratos as Ory Kratos<br/>(Identity Provider)
+    
+    rect rgb(230, 240, 255)
+    Note over User,Kratos: 1. OAuth2 Authorization Code Flow Initiation
+    User->>NextJS: Click "Sign In"
+    NextJS->>User: JavaScript redirect to<br/>/api/.ory/hydra/oauth2/auth?client_id=frontend-app&...
+    User->>NextJS: GET /api/.ory/hydra/oauth2/auth<br/>(proxied via Next.js rewrite)
+    NextJS->>Hydra: Proxy to http://localhost:5444/oauth2/auth
+    end
+    
+    rect rgb(255, 240, 230)
+    Note over User,Kratos: 2. Login Delegation (Hydra → Next.js → Kratos)
+    Hydra->>NextJS: 302 Redirect to<br/>/auth/hydra/login?login_challenge=...
+    NextJS->>User: Forward redirect
+    User->>NextJS: GET /auth/hydra/login?login_challenge=...
+    NextJS->>NextJS: Server component renders
+    NextJS->>NextJS: Fetch login request<br/>GET /api/hydra/login
+    NextJS->>Hydra: Admin API: getOAuth2LoginRequest
+    Hydra-->>NextJS: Return login request {skip, subject, ...}
+    
+    alt User already has Hydra session (skip=true)
+        NextJS->>NextJS: POST /api/hydra/login
+        NextJS->>Hydra: Admin API: acceptOAuth2LoginRequest
+        Hydra-->>NextJS: {redirect_to: consent URL}
+        NextJS->>User: 302 Redirect to consent
+    else No Hydra session - check Kratos
+        NextJS->>Kratos: toSession() with cookies
+        alt Has active Kratos session
+            Kratos-->>NextJS: {identity: {id, traits}}
+            NextJS->>NextJS: POST /api/hydra/login
+            NextJS->>Hydra: Admin API: acceptOAuth2LoginRequest<br/>{subject: identity.id}
+            Hydra-->>NextJS: {redirect_to: consent URL}
+            NextJS->>User: 302 Redirect to consent
+        else No Kratos session
+            NextJS->>User: 302 Redirect to<br/>/auth/login?return_to=/auth/hydra/login...
+            User->>NextJS: Complete Kratos login flow
+            NextJS->>Kratos: Submit credentials
+            Kratos-->>User: Set Kratos session cookie
+            NextJS->>User: 302 Redirect back to<br/>/auth/hydra/login?login_challenge=...
+            Note over User,NextJS: Flow continues from step 6
+        end
+    end
+    end
+    
+    rect rgb(240, 255, 240)
+    Note over User,Kratos: 3. Consent Flow (Auto-approved for first-party)
+    User->>NextJS: GET /auth/hydra/consent?consent_challenge=...
+    NextJS->>NextJS: Server component renders
+    NextJS->>NextJS: GET /api/hydra/consent
+    NextJS->>Hydra: Admin API: getOAuth2ConsentRequest
+    Hydra-->>NextJS: {requested_scope, subject, skip: true, ...}
+    NextJS->>Kratos: toSession() to get user traits
+    Kratos-->>NextJS: {identity: {id, traits: {email, name}}}
+    NextJS->>NextJS: POST /api/hydra/consent
+    NextJS->>Hydra: Admin API: acceptOAuth2ConsentRequest<br/>{session: {id_token: {sub, email, name}}}
+    Hydra-->>NextJS: {redirect_to: callback URL with code}
+    NextJS->>User: 302 Redirect to<br/>/auth/callback?code=...&state=...
+    end
+    
+    rect rgb(255, 245, 230)
+    Note over User,Kratos: 4. Token Exchange (BFF Pattern)
+    User->>NextJS: GET /auth/callback?code=...
+    NextJS->>NextJS: Server-side route handler
+    NextJS->>Hydra: POST /oauth2/token<br/>{grant_type: authorization_code, code, ...}<br/>Authorization: Basic client_id:client_secret
+    Hydra-->>NextJS: {access_token, id_token, refresh_token, expires_in}
+    NextJS->>NextJS: Store tokens in httpOnly cookies<br/>oauth_access_token, oauth_id_token, oauth_refresh_token
+    NextJS->>User: 302 Redirect to home<br/>Set-Cookie: httpOnly cookies
+    end
+    
+    rect rgb(240, 255, 255)
+    Note over User,Kratos: 5. Authenticated Session Usage
+    User->>NextJS: Access protected resource
+    NextJS->>NextJS: Client calls GET /api/auth/session
+    NextJS->>NextJS: Read tokens from httpOnly cookies
+    NextJS->>NextJS: Decode JWT payload (base64)
+    NextJS-->>User: Return decoded claims<br/>{sub, email, name, exp}<br/>(NOT raw tokens)
+    end

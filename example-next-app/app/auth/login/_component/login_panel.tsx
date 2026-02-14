@@ -8,11 +8,11 @@ import { useAuthFlow } from '@/ory/kratos/flow_hook';
 import { UpdateLoginFlowWithPasswordMethod } from '@ory/client';
 import { useEffect } from 'react';
 
-export function LoginPanel({ flowId }: { flowId?: string }) {
+export function LoginPanel({ flowId, returnTo }: { flowId?: string; returnTo?: string }) {
   const authFlow = useAuthFlow<
     FlowTypeEnum.Login,
     UpdateLoginFlowWithPasswordMethod
-  >(SelfServiceFlow.Login, flowId, 'password');
+  >(SelfServiceFlow.Login, flowId, 'password', returnTo);
 
   const submitForm = async (
     e?: React.SubmitEvent<HTMLFormElement>,
@@ -21,11 +21,11 @@ export function LoginPanel({ flowId }: { flowId?: string }) {
   ) => {
     e?.preventDefault();
     const success =
-      method === 'password'
-        ? await authFlow.updateFlow()
-        : await authFlow.updateFlow(
-            authFlow.createProviderSubmitData(provider!)
-          );
+      method === 'oidc'
+      ? await authFlow.updateFlow(
+          authFlow.createProviderSubmitData(provider!)
+        )
+      : await authFlow.updateFlow();
     if (success) {
       authFlow.resetFlowData();
     }

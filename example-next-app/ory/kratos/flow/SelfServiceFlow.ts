@@ -34,25 +34,26 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
   }
 
   // Methods to create a new ory kratos flow
-  async createFlow(): Promise<void> {
+  async createFlow(returnTo?: string): Promise<void> {
     switch (this.flowType) {
       case FlowTypeEnum.Registration:
-        this.flow = (await kratos.createBrowserRegistrationFlow())
+        this.flow = (await kratos.createBrowserRegistrationFlow({ returnTo }))
           .data as FlowMap[T];
         break;
       case FlowTypeEnum.Login:
-        this.flow = (await kratos.createBrowserLoginFlow()).data as FlowMap[T];
+        this.flow = (await kratos.createBrowserLoginFlow({ returnTo }))
+          .data as FlowMap[T];
         break;
       case FlowTypeEnum.Recovery:
-        this.flow = (await kratos.createBrowserRecoveryFlow())
+        this.flow = (await kratos.createBrowserRecoveryFlow({ returnTo }))
           .data as FlowMap[T];
         break;
       case FlowTypeEnum.Settings:
-        this.flow = (await kratos.createBrowserSettingsFlow())
+        this.flow = (await kratos.createBrowserSettingsFlow({ returnTo }))
           .data as FlowMap[T];
         break;
       case FlowTypeEnum.Verification:
-        this.flow = (await kratos.createBrowserVerificationFlow())
+        this.flow = (await kratos.createBrowserVerificationFlow({ returnTo }))
           .data as FlowMap[T];
         break;
       default:

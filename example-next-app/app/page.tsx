@@ -1,10 +1,10 @@
 'use client';
 
+import { Button } from '@/components/ui/button';
 import { useSession } from '@/hook/auth/session_hook';
-import Link from 'next/link';
 
 export default function Home() {
-  const { session, user, isLoggedIn } = useSession();
+  const { session, user, isLoggedIn, login } = useSession();
 
   if (isLoggedIn) {
     return (
@@ -30,22 +30,24 @@ export default function Home() {
           Please sign in or sign up to continue.
         </p>
         <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <Link
+          <Button
             className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="/auth/login"
+            onClick={() => login("/")} 
             rel="noopener noreferrer"
           >
-            Sign In
-          </Link>
-          <Link
+            Login
+          </Button>
+          {/* <Link
             className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
             href="/auth/registration"
             rel="noopener noreferrer"
           >
             Sign Up
-          </Link>
+          </Link> */}
         </div>
       </main>
     </div>
   );
 }
+
+//http://localhost:3000/auth/login?error=invalid_state&error_description=The state is missing or does not have enough characters and is therefore considered too weak. Request parameter %27state%27 must be at least be 8 characters long to ensure sufficient entropy.

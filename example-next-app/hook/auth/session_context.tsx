@@ -9,6 +9,10 @@ type SessionContextType = {
   loading: boolean;
   isLoggedIn: boolean;
   error?: string | null;
+  // OAuth-related fields
+  accessTokenClaims?: Record<string, any>;
+  login: (returnTo?: string) => void;
+  logout: () => Promise<void>;
 };
 
 export const SessionContext = createContext<SessionContextType | undefined>(

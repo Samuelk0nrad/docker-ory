@@ -17,11 +17,12 @@ type SignupData = UpdateRegistrationFlowWithPasswordMethod & {
   };
 };
 
-export function SignupPanel({ flowId }: { flowId?: string }) {
+export function SignupPanel({ flowId, returnTo }: { flowId?: string; returnTo?: string }) {
   const authFlow = useAuthFlow<FlowTypeEnum.Registration, SignupData>(
     SelfServiceFlow.Registration,
     flowId,
-    'password'
+    'password',
+    returnTo
   );
 
   const submitForm = async (
