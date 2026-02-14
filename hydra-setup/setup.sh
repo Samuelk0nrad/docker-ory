@@ -22,13 +22,13 @@ echo "Creating OAuth client..."
 CLIENT_ID="frontend-app"
 
 # Check if client already exists
-if curl -sf "$HYDRA_ADMIN/clients/$CLIENT_ID" >/dev/null 2>&1; then
+if curl -sf "$HYDRA_ADMIN/admin/clients/$CLIENT_ID" >/dev/null 2>&1; then
   echo "Client $CLIENT_ID already exists"
   exit 0
 fi
 
 # Create the client
-RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$HYDRA_ADMIN/clients" \
+RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$HYDRA_ADMIN/admin/clients" \
   -H "Content-Type: application/json" \
   -d '{
     "client_id": "'"$CLIENT_ID"'",
@@ -38,7 +38,9 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$HYDRA_ADMIN/clients" \
     "response_types": ["code"],
     "scope": "openid profile email offline",
     "redirect_uris": ["http://localhost:3000/callback", "http://localhost:3000/auth/callback"],
-    "token_endpoint_auth_method": "client_secret_basic"
+    "token_endpoint_auth_method": "client_secret_basic",
+    "skip_consent": true,
+    "skip_logout_consent": true
   }')
 
 HTTP_CODE=$(echo "$RESPONSE" | tail -n1)

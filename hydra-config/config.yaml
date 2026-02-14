@@ -36,6 +36,10 @@ oidc:
     pairwise:
       salt: youReallyNeedToChangeThis
 
+strategies:
+  access_token: jwt
+  scope: exact
+
 ttl:
   login_consent_request: 1h
   access_token: 1h

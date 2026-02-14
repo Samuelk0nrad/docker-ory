@@ -19,7 +19,7 @@ selfservice:
   default_browser_return_url: http://localhost:3000
   allowed_return_urls:
     - http://localhost:3000/
-    - http://localhost:3000/auth/hydra/login
+    - http://localhost:3000/auth/hydra/
 
   flows:
     login:
