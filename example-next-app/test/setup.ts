@@ -16,9 +16,14 @@ if (!globalThis.TextEncoder) {
 if (!globalThis.crypto?.subtle) {
   const { webcrypto } = require('crypto')
   if (!globalThis.crypto) {
-    globalThis.crypto = webcrypto
+    globalThis.crypto = webcrypto as Crypto
   } else {
-    globalThis.crypto.subtle = webcrypto.subtle
+    // Use Object.defineProperty to override the read-only subtle property
+    Object.defineProperty(globalThis.crypto, 'subtle', {
+      value: webcrypto.subtle,
+      writable: true,
+      configurable: true
+    })
   }
 }
 

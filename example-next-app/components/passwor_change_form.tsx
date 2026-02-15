@@ -2,6 +2,7 @@
 
 import { Field, FieldGroup, FieldLabel } from '@/components/ui/field';
 import { Input } from '@/components/ui/input';
+import { OIDCProvider } from '@/ory/kratos/flow/types/Provider';
 import { UiTextMessage } from '@/ory/kratos/flow/types/UiTextMessage';
 import { ProviderSelection } from '@/ory/kratos/ui/components/provider_selection';
 import { FlowForm } from '../ory/kratos/ui/flow_form';
@@ -25,12 +26,9 @@ interface PasswordChangeFormProps {
   generalMessage?: UiTextMessage;
 
   oidc?: {
-    onSubmit: (id: string, name: string) => void;
+    onSubmit: (provider: OIDCProvider) => void;
     message?: UiTextMessage;
-    providers: {
-      id: string;
-      name: 'google';
-    }[];
+    providers: OIDCProvider[];
   };
 
   /** Whether the form is in a loading state */
