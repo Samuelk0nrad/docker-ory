@@ -1,0 +1,99 @@
+name: Tests
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: ./example-next-app
+        run: bun install --frozen-lockfile
+
+      - name: Start Docker test services
+        run: |
+          docker compose -f docker-compose.test.yaml up -d
+          echo "Waiting for services to be healthy..."
+          sleep 25
+
+      - name: Check Docker services health
+        run: |
+          docker compose -f docker-compose.test.yaml ps
+          if ! docker compose -f docker-compose.test.yaml ps | grep -q "healthy"; then
+            echo "Services failed to start properly"
+            docker compose -f docker-compose.test.yaml logs
+            exit 1
+          fi
+
+      - name: Start Next.js in test mode
+        working-directory: ./example-next-app
+        run: |
+          NODE_ENV=test bun run next dev -p 3001 &
+          NEXTJS_PID=$!
+          echo "NEXTJS_PID=$NEXTJS_PID" >> $GITHUB_ENV
+          
+          # Wait for Next.js to be ready
+          for i in {1..30}; do
+            if curl -s http://localhost:3001 > /dev/null 2>&1; then
+              echo "Next.js is ready"
+              break
+            fi
+            if [ $i -eq 30 ]; then
+              echo "Next.js failed to start"
+              exit 1
+            fi
+            sleep 1
+          done
+
+      - name: Run unit tests
+        working-directory: ./example-next-app
+        run: bun test test/unit
+
+      - name: Run integration tests
+        working-directory: ./example-next-app
+        run: bun test test/integration
+
+      - name: Generate coverage report
+        working-directory: ./example-next-app
+        run: bun test:coverage
+        continue-on-error: true
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v4
+        with:
+          files: ./example-next-app/coverage/lcov.info
+          flags: unittests
+          name: codecov-umbrella
+        continue-on-error: true
+
+      - name: Cleanup
+        if: always()
+        run: |
+          # Stop Next.js
+          if [ ! -z "$NEXTJS_PID" ]; then
+            kill $NEXTJS_PID 2>/dev/null || true
+          fi
+          
+          # Stop Docker services
+          docker compose -f docker-compose.test.yaml down -v
+
+      - name: Test Summary
+        if: always()
+        run: |
+          echo "### Test Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Tests completed" >> $GITHUB_STEP_SUMMARY

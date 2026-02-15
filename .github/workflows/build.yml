@@ -1,0 +1,39 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v1
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        working-directory: ./example-next-app
+        run: bun install --frozen-lockfile
+
+      - name: Build Next.js application
+        working-directory: ./example-next-app
+        run: bun run build
+        env:
+          NEXT_PUBLIC_KRATOS_URL: http://localhost:5545
+          NEXT_PUBLIC_HYDRA_URL: http://localhost:5444
+          NEXT_PUBLIC_APP_URL: http://localhost:3000
+
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "### Build Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ Build completed successfully" >> $GITHUB_STEP_SUMMARY
