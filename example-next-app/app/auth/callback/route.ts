@@ -19,6 +19,7 @@ export async function GET(req: NextRequest) {
   const cookieStore = await cookies();
   const expectedState = cookieStore.get("oauth_state")?.value;
   const returnTo = cookieStore.get("oauth_return_to")?.value;
+  const codeVerifier = cookieStore.get("oauth_pkce_verifier")?.value;
   
   if (!state || !expectedState || state !== expectedState) {
     console.warn("[oauth callback] Invalid state parameter:", { state, expectedState });
@@ -34,6 +35,7 @@ export async function GET(req: NextRequest) {
 
   // Clear state cookie after validation
   cookieStore.set("oauth_state", "", { path: "/", maxAge: 0 });
+  cookieStore.set("oauth_pkce_verifier", "", { path: "/", maxAge: 0 });
 
 
   // Handle OAuth errors
@@ -54,6 +56,13 @@ export async function GET(req: NextRequest) {
     );
   }
 
+  if (!codeVerifier) {
+    return NextResponse.json(
+      { error: "Missing PKCE verifier" },
+      { status: 400 }
+    );
+  }
+
   try {
     // Get client credentials and Hydra URL from env
     const clientId = process.env.OAUTH_CLIENT_ID ?? "frontend-app";
@@ -69,6 +78,7 @@ export async function GET(req: NextRequest) {
       grant_type: "authorization_code",
       code,
       redirect_uri: redirectUri,
+      code_verifier: codeVerifier,
     });
 
     // Use Basic Auth for client authentication
@@ -101,12 +111,12 @@ export async function GET(req: NextRequest) {
       scope,
     } = tokens;
 
-    // Prepare cookie options (httpOnly, secure in production, SameSite=Lax)
+    // Prepare cookie options (httpOnly, secure in production, SameSite=Strict)
     const isProduction = process.env.NODE_ENV === "production";
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax" as const,
+      sameSite: "strict" as const,
       path: "/",
       maxAge: expires_in ?? 3600, // Default to 1 hour if not provided
     };
@@ -141,7 +151,7 @@ export async function GET(req: NextRequest) {
       {
         httpOnly: false, // Allow client to read expiry for refresh logic
         secure: isProduction,
-        sameSite: "lax" as const,
+        sameSite: "strict" as const,
         path: "/",
         maxAge: expires_in ?? 3600,
       }

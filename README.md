@@ -37,12 +37,12 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
    - Backend-for-Frontend (BFF) - securely manages tokens
 
 **Flow sequence:**
-1. User initiates OAuth2 flow → redirected to Hydra
+1. User initiates OAuth2 flow → PKCE `code_challenge` generated → redirected to Hydra
 2. Hydra delegates login to Kratos (transparent to user)
 3. User authenticates via Kratos (username/password, OIDC providers, etc.)
 4. Kratos returns to Hydra with authenticated subject
 5. Hydra issues consent (auto-skipped for first-party client)
-6. Authorization code exchanged for tokens (server-side)
+6. Authorization code exchanged for tokens with PKCE `code_verifier` (server-side)
 7. Tokens stored in httpOnly cookies (never exposed to browser)
 8. User authenticated with JWT claims available client-side
 

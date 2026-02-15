@@ -8,7 +8,7 @@ sequenceDiagram
     rect rgb(230, 240, 255)
     Note over User,Kratos: 1. OAuth2 Authorization Code Flow Initiation
     User->>NextJS: Click "Sign In"
-    NextJS->>User: JavaScript redirect to<br/>/api/.ory/hydra/oauth2/auth?client_id=frontend-app&...
+    NextJS->>User: JavaScript redirect to<br/>/api/.ory/hydra/oauth2/auth?client_id=frontend-app&code_challenge=...&...
     User->>NextJS: GET /api/.ory/hydra/oauth2/auth<br/>(proxied via Next.js rewrite)
     NextJS->>Hydra: Proxy to http://localhost:5444/oauth2/auth
     end
@@ -66,7 +66,7 @@ sequenceDiagram
     Note over User,Kratos: 4. Token Exchange (BFF Pattern)
     User->>NextJS: GET /auth/callback?code=...
     NextJS->>NextJS: Server-side route handler
-    NextJS->>Hydra: POST /oauth2/token<br/>{grant_type: authorization_code, code, ...}<br/>Authorization: Basic client_id:client_secret
+    NextJS->>Hydra: POST /oauth2/token<br/>{grant_type: authorization_code, code, code_verifier, ...}<br/>Authorization: Basic client_id:client_secret
     Hydra-->>NextJS: {access_token, id_token, refresh_token, expires_in}
     NextJS->>NextJS: Store tokens in httpOnly cookies<br/>oauth_access_token, oauth_id_token, oauth_refresh_token
     NextJS->>User: 302 Redirect to home<br/>Set-Cookie: httpOnly cookies

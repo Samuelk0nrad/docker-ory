@@ -74,12 +74,12 @@ export async function POST(req: NextRequest) {
       scope,
     } = tokens;
 
-    // Prepare cookie options (httpOnly, secure in production, SameSite=Lax)
+    // Prepare cookie options (httpOnly, secure in production, SameSite=Strict)
     const isProduction = process.env.NODE_ENV === "production";
     const cookieOptions = {
       httpOnly: true,
       secure: isProduction,
-      sameSite: "lax" as const,
+      sameSite: "strict" as const,
       path: "/",
       maxAge: expires_in ?? 3600, // Default to 1 hour if not provided
     };
@@ -113,7 +113,7 @@ export async function POST(req: NextRequest) {
       {
         httpOnly: false, // Allow client to read expiry for refresh logic
         secure: isProduction,
-        sameSite: "lax" as const,
+        sameSite: "strict" as const,
         path: "/",
         maxAge: expires_in ?? 3600,
       }

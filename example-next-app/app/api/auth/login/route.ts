@@ -11,6 +11,21 @@ import { cookies } from "next/headers";
  */
 export async function GET(req: NextRequest) {
   try {
+    const base64UrlEncode = (input: Uint8Array) =>
+      Buffer.from(input)
+        .toString("base64")
+        .replace(/\+/g, "-")
+        .replace(/\//g, "_")
+        .replace(/=+$/g, "");
+    const createCodeVerifier = () => {
+      const random = crypto.getRandomValues(new Uint8Array(32));
+      return base64UrlEncode(random);
+    };
+    const createCodeChallenge = async (verifier: string) => {
+      const data = new TextEncoder().encode(verifier);
+      const digest = await crypto.subtle.digest("SHA-256", data);
+      return base64UrlEncode(new Uint8Array(digest));
+    };
     const returnTo = req.nextUrl.searchParams.get("returnTo");
 
     // Get OAuth configuration from environment
@@ -35,6 +50,12 @@ export async function GET(req: NextRequest) {
     authUrl.searchParams.set("scope", "openid profile email offline");
     authUrl.searchParams.set("redirect_uri", redirectUri);
 
+    // Generate PKCE code verifier/challenge (S256)
+    const codeVerifier = createCodeVerifier();
+    const codeChallenge = await createCodeChallenge(codeVerifier);
+    authUrl.searchParams.set("code_challenge", codeChallenge);
+    authUrl.searchParams.set("code_challenge_method", "S256");
+
     // Generate strong random state for CSRF protection (>= 8 chars)
     const state = crypto.randomUUID(); // 36 chars
     authUrl.searchParams.set("state", state);
@@ -44,7 +65,16 @@ export async function GET(req: NextRequest) {
     cookieStore.set("oauth_state", state, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
-      sameSite: "lax" as const,
+      sameSite: "strict" as const,
+      path: "/",
+      maxAge: 600, // 10 minutes
+    });
+
+    // Store PKCE verifier for token exchange (short-lived, 10 min)
+    cookieStore.set("oauth_pkce_verifier", codeVerifier, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict" as const,
       path: "/",
       maxAge: 600, // 10 minutes
     });
@@ -54,7 +84,7 @@ export async function GET(req: NextRequest) {
       cookieStore.set("oauth_return_to", returnTo, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
-        sameSite: "lax" as const,
+        sameSite: "strict" as const,
         path: "/",
         maxAge: 600, // 10 minutes
       });
