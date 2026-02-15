@@ -1,20 +1,21 @@
 import '@testing-library/jest-dom'
+import fetch from 'node-fetch'
+import { webcrypto } from 'crypto'
+import { TextDecoder, TextEncoder } from 'util'
 
 // Polyfill fetch for Node.js environment (Jest with coverage)
 if (!globalThis.fetch) {
-  globalThis.fetch = require('node-fetch')
+  globalThis.fetch = fetch as unknown as typeof globalThis.fetch
 }
 
 // Polyfill TextEncoder/TextDecoder for Node.js environment
 if (!globalThis.TextEncoder) {
-  const util = require('util')
-  globalThis.TextEncoder = util.TextEncoder
-  globalThis.TextDecoder = util.TextDecoder
+  globalThis.TextEncoder = TextEncoder as unknown as typeof globalThis.TextEncoder
+  globalThis.TextDecoder = TextDecoder as unknown as typeof globalThis.TextDecoder
 }
 
 // Polyfill Web Crypto API for Node.js environment
 if (!globalThis.crypto?.subtle) {
-  const { webcrypto } = require('crypto')
   if (!globalThis.crypto) {
     globalThis.crypto = webcrypto as Crypto
   } else {

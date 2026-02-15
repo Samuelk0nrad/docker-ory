@@ -44,7 +44,7 @@ export function SettingsPanel({ flowId }: { flowId?: string }) {
 
   if (
     authFlow.flow.flow?.ui?.messages?.some(
-      (m) => (m.context as any)?.privilegedSessionExpiresAt
+      (m) => (m.context as Record<string, unknown>)?.privilegedSessionExpiresAt
     )
   ) {
     return (

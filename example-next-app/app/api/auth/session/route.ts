@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 /**
@@ -9,7 +9,7 @@ import { cookies } from "next/headers";
  *
  * GET /api/auth/session
  */
-export async function GET(req: NextRequest) {
+export async function GET() {
   try {
     const cookieStore = await cookies();
     const idToken = cookieStore.get("oauth_id_token")?.value;

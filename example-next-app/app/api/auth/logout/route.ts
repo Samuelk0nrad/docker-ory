@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 
 /**
@@ -9,7 +9,7 @@ import { cookies } from "next/headers";
  *
  * POST /api/auth/logout
  */
-export async function POST(req: NextRequest) {
+export async function POST() {
   try {
     const cookieStore = await cookies();
 

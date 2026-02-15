@@ -91,7 +91,7 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
 
   async updateFlow(
     flowData: UpdateFlowBodyMap[T]
-  ): Promise<AxiosResponse<UpdateFlowResponseMap[T], any, {}>> {
+  ): Promise<AxiosResponse<UpdateFlowResponseMap[T], unknown, Record<string, unknown>>> {
     if (!this.flow) {
       throw new Error('Flow not initialized');
     }
@@ -102,31 +102,31 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
       case FlowTypeEnum.Registration:
         response = await kratos.updateRegistrationFlow({
           flow: this.flow.id!,
-          updateRegistrationFlowBody: flowData as any,
+          updateRegistrationFlowBody: flowData as UpdateFlowBodyMap[FlowTypeEnum.Registration],
         });
         break;
       case FlowTypeEnum.Login:
         response = await kratos.updateLoginFlow({
           flow: this.flow.id!,
-          updateLoginFlowBody: flowData as any,
+          updateLoginFlowBody: flowData as UpdateFlowBodyMap[FlowTypeEnum.Login],
         });
         break;
       case FlowTypeEnum.Recovery:
         response = await kratos.updateRecoveryFlow({
           flow: this.flow.id!,
-          updateRecoveryFlowBody: flowData as any,
+          updateRecoveryFlowBody: flowData as UpdateFlowBodyMap[FlowTypeEnum.Recovery],
         });
         break;
       case FlowTypeEnum.Settings:
         response = await kratos.updateSettingsFlow({
           flow: this.flow.id!,
-          updateSettingsFlowBody: flowData as any,
+          updateSettingsFlowBody: flowData as UpdateFlowBodyMap[FlowTypeEnum.Settings],
         });
         break;
       case FlowTypeEnum.Verification:
         response = await kratos.updateVerificationFlow({
           flow: this.flow.id!,
-          updateVerificationFlowBody: flowData as any,
+          updateVerificationFlowBody: flowData as UpdateFlowBodyMap[FlowTypeEnum.Verification],
         });
         break;
       default:
@@ -134,7 +134,7 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
     }
 
     // Update the flow with the response data if it contains a flow object
-    const responseData = response.data as any;
+    const responseData = response.data as UpdateFlowResponseMap[T];
     if (
       responseData &&
       typeof responseData === 'object' &&
@@ -143,6 +143,6 @@ export class SelfServiceFlow<T extends keyof FlowMap = keyof FlowMap> {
       this.flow = responseData as FlowMap[T];
     }
 
-    return response as AxiosResponse<UpdateFlowResponseMap[T], any, {}>;
+    return response as AxiosResponse<UpdateFlowResponseMap[T], unknown, Record<string, unknown>>;
   }
 }

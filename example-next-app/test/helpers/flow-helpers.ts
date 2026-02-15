@@ -186,7 +186,7 @@ export async function revokeToken(
 /**
  * Get Kratos session information
  */
-export async function getKratosSession(sessionToken: string): Promise<any> {
+export async function getKratosSession(sessionToken: string): Promise<unknown> {
   const kratosUrl = process.env.NEXT_PUBLIC_KRATOS_URL || 'http://localhost:6545'
   
   const response = await fetch(`${kratosUrl}/sessions/whoami`, {

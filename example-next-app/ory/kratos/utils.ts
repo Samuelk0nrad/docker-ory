@@ -1,6 +1,6 @@
-import { UiNode } from '@ory/client';
+import { UiNode, UiNodeInputAttributes } from '@ory/client';
 
-export function getCsrfToken(flow: any): {
+export function getCsrfToken(flow: { ui?: { nodes?: UiNode[] } }): {
   error?: string;
   csrf_token?: string;
 } {
@@ -9,12 +9,12 @@ export function getCsrfToken(flow: any): {
   }
 
   try {
-    const csrfToken = flow.ui.nodes.find(
+    const csrfToken = (flow.ui.nodes.find(
       (node: UiNode) =>
         node.type === 'input' &&
         node.attributes.node_type === 'input' &&
         node.attributes.name === 'csrf_token'
-    )?.attributes.value;
+    )?.attributes as UiNodeInputAttributes | undefined)?.value;
     if (!csrfToken) {
       return { error: 'CSRF token not found' };
     }

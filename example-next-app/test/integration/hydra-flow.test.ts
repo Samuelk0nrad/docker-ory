@@ -82,7 +82,7 @@ describe('Hydra Flow Integration', () => {
       expect(Array.isArray(clients)).toBe(true)
       
       // Should include our test client
-      const testClient = clients.find((c: any) => c.client_id === 'test-client-id')
+      const testClient = clients.find((c: {client_id: string}) => c.client_id === 'test-client-id')
       expect(testClient).toBeDefined()
     })
   })

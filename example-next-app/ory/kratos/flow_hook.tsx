@@ -70,7 +70,7 @@ export function useAuthFlow<
     value: unknown
   ) {
     const keys = path.split('.');
-    const result: Record<string, any> = { ...obj };
+    const result: Record<string, unknown> = { ...obj };
     let current = result;
 
     keys.forEach((keyPart, index) => {
@@ -78,7 +78,7 @@ export function useAuthFlow<
         current[keyPart] = value;
       } else {
         current[keyPart] = { ...(current[keyPart] ?? {}) };
-        current = current[keyPart];
+        current = current[keyPart] as Record<string, unknown>;
       }
     });
     return result;
@@ -101,7 +101,7 @@ export function useAuthFlow<
     setMessages((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function updateFlow(rdata?: UpdateFlowBodyMap[T]): Promise<boolean> {
+  async function updateFlow(rdata?: UpdateFlowBodyMap[T] | unknown): Promise<boolean> {
     setIsLoading(true);
     let res = true;
     try {
@@ -243,8 +243,8 @@ export function useAuthFlow<
     const validatedProviderNodes = oidcInputNodes?.filter(
       (n) =>
         n.meta.label?.context &&
-        (n.meta.label.context as any).provider &&
-        (n.meta.label.context as any).provider_id
+        (n.meta.label.context as Record<string, unknown>).provider &&
+        (n.meta.label.context as Record<string, unknown>).provider_id
     );
 
     const p = validatedProviderNodes?.map((n) => {
@@ -261,11 +261,11 @@ export function useAuthFlow<
     return (p ?? []).filter((p): p is OIDCProvider => !!p);
   }
 
-  function createProviderSubmitData(provider: OIDCProvider): any {
+  function createProviderSubmitData(provider: OIDCProvider) {
     return {
       method: 'oidc',
       provider: provider.value,
-      csrf_token: getCsrfToken(flow.flow)?.csrf_token,
+      csrf_token: flow.flow ? getCsrfToken(flow.flow)?.csrf_token : undefined,
     };
   }
 
