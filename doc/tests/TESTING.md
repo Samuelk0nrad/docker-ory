@@ -7,6 +7,12 @@ Complete guide for testing the Ory Hydra/Kratos integration with Next.js.
 ## Quick Start
 
 ```bash
+# Single command to run everything (automated)
+cd example-next-app
+bun run test:all
+
+# OR manual steps:
+
 # 1. Start test services (Docker)
 docker compose -f docker-compose.test.yaml up -d
 sleep 20
@@ -31,6 +37,15 @@ bun test:coverage
 ---
 
 ## Test Commands
+
+### Automated (Recommended)
+```bash
+bun run test:all           # Complete automated test suite
+                           # - Starts Docker services
+                           # - Starts Next.js in test mode
+                           # - Runs all tests
+                           # - Cleans up automatically
+```
 
 ### Basic
 ```bash

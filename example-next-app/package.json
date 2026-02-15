@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "jest",
+    "test:all": "./test-all.sh",
     "test:unit": "jest --testPathPattern=unit",
     "test:integration": "jest --testPathPattern=integration --runInBand",
     "test:integration:api": "jest --testPathPattern=integration/kratos-flow --runInBand",
