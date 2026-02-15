@@ -1,31 +1,48 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { SessionContext, User } from './session_context';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [, setExpiresAt] = useState<number | null>(null);
   const [hasRefreshToken, setHasRefreshToken] = useState<boolean>(false);
-  
+
   const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const refreshTokenRef = useRef<(() => Promise<void>) | null>(null);
+
+  // Schedule token refresh 1 minute before expiry
+  const scheduleTokenRefresh = useCallback((expiresAtTimestamp: number): void => {
+    // Clear existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+
+    const now = Date.now();
+    const expiresIn = expiresAtTimestamp - now;
+    const refreshIn = Math.max(0, expiresIn - 60000); // 1 minute before expiry
+
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshTokenRef.current?.();
+    }, refreshIn);
+  }, []);
 
   // Fetch session from API
-  const fetchSession = async () => {
+  const fetchSession = useCallback(async (): Promise<void> => {
     try {
       const response = await fetch('/api/auth/session');
-      
+
       if (response.ok) {
         const data = await response.json();
-        
+
         if (data.user) {
           setUser(data.user);
           setExpiresAt(data.expiresAt);
           setHasRefreshToken(data.hasRefreshToken || false);
           setError(null);
-          
+
           // Schedule auto-refresh 1 minute before expiry
           if (data.expiresAt && data.hasRefreshToken) {
             scheduleTokenRefresh(data.expiresAt);
@@ -52,23 +69,23 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [scheduleTokenRefresh]);
 
   // Refresh the OAuth token
-  const refreshToken = async () => {
+  const refreshToken = useCallback(async (): Promise<void> => {
     try {
       const response = await fetch('/api/auth/refresh', { method: 'POST' });
-      
+
       if (response.ok) {
         const data = await response.json();
         setExpiresAt(data.expiresAt);
         setError(null);
-        
+
         // Schedule next refresh
         if (data.expiresAt && hasRefreshToken) {
           scheduleTokenRefresh(data.expiresAt);
         }
-        
+
         // Refetch session to get updated user data
         await fetchSession();
       } else if (response.status === 401) {
@@ -95,23 +112,11 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         login();
       }
     }
-  };
-
-  // Schedule token refresh 1 minute before expiry
-  const scheduleTokenRefresh = (expiresAtTimestamp: number) => {
-    // Clear existing timeout
-    if (refreshTimeoutRef.current) {
-      clearTimeout(refreshTimeoutRef.current);
-    }
-
-    const now = Date.now();
-    const expiresIn = expiresAtTimestamp - now;
-    const refreshIn = Math.max(0, expiresIn - 60000); // 1 minute before expiry
-
-    refreshTimeoutRef.current = setTimeout(() => {
-      refreshToken();
-    }, refreshIn);
-  };
+  }, [fetchSession, hasRefreshToken, scheduleTokenRefresh]);
+  
+  useEffect(() => {
+    refreshTokenRef.current = refreshToken;
+  }, [refreshToken]);
 
   // Start OAuth login flow
   const login = (returnTo?: string) => {
@@ -120,7 +125,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
     if (returnTo) {
       params.set('returnTo', returnTo);
     }
-    
+
     // Fetch authorization URL from server
     fetch(`/api/auth/login?${params.toString()}`)
       .then(response => response.json())
@@ -141,19 +146,19 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
   const logout = async () => {
     try {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
-      
+
       if (response.ok) {
         setUser(undefined);
         setExpiresAt(null);
         setHasRefreshToken(false);
         setError(null);
-        
+
         // Clear refresh timeout
         if (refreshTimeoutRef.current) {
           clearTimeout(refreshTimeoutRef.current);
           refreshTimeoutRef.current = null;
         }
-        
+
         // Redirect to home
         window.location.href = '/';
       } else {
@@ -169,14 +174,14 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     fetchSession();
-    
+
     // Cleanup refresh timeout on unmount
     return () => {
       if (refreshTimeoutRef.current) {
         clearTimeout(refreshTimeoutRef.current);
       }
     };
-  }, []);
+  }, [fetchSession]);
 
   return (
     <SessionContext.Provider

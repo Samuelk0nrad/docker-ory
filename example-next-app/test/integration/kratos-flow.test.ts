@@ -3,7 +3,7 @@
  * Tests registration, login, recovery, verification, and settings flows
  */
 
-import { createTestUser, getKratosSession, deleteKratosIdentity, type TestUser } from '../helpers/flow-helpers'
+import { createTestUser, deleteKratosIdentity, type TestUser } from '../helpers/flow-helpers'
 
 describe('Kratos Flow Integration', () => {
   const kratosUrl = process.env.NEXT_PUBLIC_KRATOS_URL || 'http://localhost:6545'

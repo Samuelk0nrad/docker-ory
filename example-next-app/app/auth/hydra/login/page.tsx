@@ -48,11 +48,11 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
       throw new Error(
         `Failed to fetch login request: ${loginReqRes.statusText}`
       );
-    } 
-    
-    
+    }
+
+
     const loginRequest = await loginReqRes.json();
-    
+
     console.log("[hydra/login page] fetched login request successfully, data:", loginRequest);
     // 2. If skip=true, immediately accept with the existing subject
     if (loginRequest.skip && loginRequest.subject) {
@@ -87,10 +87,10 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
       const { data } = await kratos.toSession({ cookie: cookieHeader });
       kratosSession = data;
       ok = true;
-    } catch (err) {
+    } catch {
       ok = false;
     }
-    
+
     if (!ok || !kratosSession?.identity) {
       // No session → redirect to Kratos login with return_to
       const returnUrl = `/auth/hydra/login?login_challenge=${encodeURIComponent(login_challenge)}`;
@@ -118,7 +118,7 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
   } catch (error) {
     // Re-throw Next.js internal errors (like redirect) so they are handled by the framework
     unstable_rethrow(error);
-    
+
     console.error("[hydra/login page] error:", error);
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6">

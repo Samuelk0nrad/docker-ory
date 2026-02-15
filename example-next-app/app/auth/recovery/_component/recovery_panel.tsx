@@ -23,7 +23,7 @@ export function RecoveryPanel({ flowId }: { flowId?: string }) {
     if (authFlow.flow.flow?.state === 'sent_email') {
       authFlow.setData('email', '');
     }
-  }, [authFlow.flow.flow?.state]);
+  }, [authFlow.flow.flow?.state, authFlow]);
 
   if (authFlow.flow.flow?.state === 'choose_method') {
     return (

@@ -5,7 +5,7 @@ import {
   UiNodeInputAttributes,
 } from '@ory/client';
 import { AxiosError } from 'axios';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
 import { FlowTypeEnum } from './flow/types/FlowTypes';
@@ -26,111 +26,32 @@ export function useAuthFlow<
   const [messages, setMessages] = useState<Record<string, UiTextMessage>>({});
   const [isLoading, setIsLoading] = useState(false);
 
-  async function startFlow(): Promise<boolean> {
-    let res = true;
-    try {
-      setIsLoading(true);
-      if (flowId) {
-        await flow.getFlow(flowId);
-      } else {
-        await flow.createFlow(returnTo);
-      }
-      setCsrfToken();
-      handleResponse(flow.flow as unknown as GenericFlowResponse);
-    } catch (error) {
-      const isAxiosError = error instanceof AxiosError;
-      const responseData = isAxiosError
-        ? (error.response?.data as GenericFlowResponse)
-        : null;
-
-      if (responseData?.error || responseData?.ui) {
-        handleResponse(responseData);
-      } else {
-        const errorMessage = isAxiosError
-          ? error.message || 'Network error occurred'
-          : error instanceof Error
-            ? error.message
-            : 'An unexpected error occurred';
-
-        updateMessages('general', {
-          text: errorMessage,
-          type: 'error',
-        });
-      }
-      res = false;
-    } finally {
-      setIsLoading(false);
-    }
-    return res;
-  }
-
-  function setNestedValue(
-    obj: Record<string, unknown>,
-    path: string,
-    value: unknown
-  ) {
-    const keys = path.split('.');
-    const result: Record<string, unknown> = { ...obj };
-    let current = result;
-
-    keys.forEach((keyPart, index) => {
-      if (index === keys.length - 1) {
-        current[keyPart] = value;
-      } else {
-        current[keyPart] = { ...(current[keyPart] ?? {}) };
-        current = current[keyPart] as Record<string, unknown>;
-      }
-    });
-    return result;
-  }
-
-  function normalizeMessageKey(key: string) {
-    return key.startsWith('traits.') ? key.replace('traits.', '') : key;
-  }
-
-  function updateData(key: string, value: unknown) {
+  const updateData = useCallback((key: string, value: unknown) => {
     const updated = key.includes('.')
       ? setNestedValue(data as Record<string, unknown>, key, value)
       : { ...data, [key]: value };
     setData((prev) => {
       return { ...prev, ...updated };
     });
-  }
+  }, [data, setData]);
 
-  function updateMessages(key: string, value: UiTextMessage) {
+  const updateMessages = useCallback((key: string, value: UiTextMessage) => {
     setMessages((prev) => ({ ...prev, [key]: value }));
-  }
+  }, [setMessages]);
 
-  async function updateFlow(rdata?: UpdateFlowBodyMap[T] | unknown): Promise<boolean> {
-    setIsLoading(true);
-    let res = true;
-    try {
-      if (flow) {
-        const result = await flow.updateFlow(
-          (rdata ?? data) as unknown as UpdateFlowBodyMap[T]
-        );
 
-        handleResponse(result.data as unknown as GenericFlowResponse);
-      } else {
-        throw new Error('Flow not initialized');
+  const setCsrfToken = useCallback(() => {
+    if (flow.flow) {
+      const { csrf_token, error } = getCsrfToken(flow.flow);
+      if (error) {
+        updateMessages('general', { text: error, type: 'error' });
+      } else if (csrf_token) {
+        updateData('csrf_token', csrf_token);
       }
-    } catch (error) {
-      if (error instanceof AxiosError && error.response?.data) {
-        handleResponse(error.response?.data as GenericFlowResponse);
-      } else {
-        updateMessages('general', {
-          text: 'An unexpected error occurred during update',
-          type: 'error',
-        });
-      }
-      res = false;
-    } finally {
-      setIsLoading(false);
     }
-    return res;
-  }
+  }, [flow, updateData, updateMessages]);
 
-  function handleResponse(response: GenericFlowResponse) {
+  const handleResponse = useCallback((response: GenericFlowResponse) => {
     if (response.continue_with) {
       handleContinueWith(response.continue_with);
     }
@@ -166,7 +87,99 @@ export function useAuthFlow<
         });
       }
     }
+  }, [updateMessages]);
+
+  const startFlow = useCallback(async (): Promise<boolean> => {
+    let res = true;
+    try {
+      setIsLoading(true);
+      if (flowId) {
+        await flow.getFlow(flowId);
+      } else {
+        await flow.createFlow(returnTo);
+      }
+      setCsrfToken();
+      handleResponse(flow.flow as unknown as GenericFlowResponse);
+    } catch (error) {
+      const isAxiosError = error instanceof AxiosError;
+      const responseData = isAxiosError
+        ? (error.response?.data as GenericFlowResponse)
+        : null;
+
+      if (responseData?.error || responseData?.ui) {
+        handleResponse(responseData);
+      } else {
+        const errorMessage = isAxiosError
+          ? error.message || 'Network error occurred'
+          : error instanceof Error
+            ? error.message
+            : 'An unexpected error occurred';
+
+        updateMessages('general', {
+          text: errorMessage,
+          type: 'error',
+        });
+      }
+      res = false;
+    } finally {
+      setIsLoading(false);
+    }
+    return res;
+  }, [flow, flowId, returnTo, handleResponse, setCsrfToken, updateMessages]);
+
+  function setNestedValue(
+    obj: Record<string, unknown>,
+    path: string,
+    value: unknown
+  ) {
+    const keys = path.split('.');
+    const result: Record<string, unknown> = { ...obj };
+    let current = result;
+
+    keys.forEach((keyPart, index) => {
+      if (index === keys.length - 1) {
+        current[keyPart] = value;
+      } else {
+        current[keyPart] = { ...(current[keyPart] ?? {}) };
+        current = current[keyPart] as Record<string, unknown>;
+      }
+    });
+    return result;
   }
+
+  function normalizeMessageKey(key: string) {
+    return key.startsWith('traits.') ? key.replace('traits.', '') : key;
+  }
+
+  async function updateFlow(rdata?: UpdateFlowBodyMap[T] | unknown): Promise<boolean> {
+    setIsLoading(true);
+    let res = true;
+    try {
+      if (flow) {
+        const result = await flow.updateFlow(
+          (rdata ?? data) as unknown as UpdateFlowBodyMap[T]
+        );
+
+        handleResponse(result.data as unknown as GenericFlowResponse);
+      } else {
+        throw new Error('Flow not initialized');
+      }
+    } catch (error) {
+      if (error instanceof AxiosError && error.response?.data) {
+        handleResponse(error.response?.data as GenericFlowResponse);
+      } else {
+        updateMessages('general', {
+          text: 'An unexpected error occurred during update',
+          type: 'error',
+        });
+      }
+      res = false;
+    } finally {
+      setIsLoading(false);
+    }
+    return res;
+  }
+
 
   function handleContinueWith(continueWith: Array<ContinueWith>) {
     // Check for UI flows first (higher priority)
@@ -204,23 +217,13 @@ export function useAuthFlow<
     setCsrfToken();
   }
 
-  function setCsrfToken() {
-    if (flow.flow) {
-      const { csrf_token, error } = getCsrfToken(flow.flow);
-      if (error) {
-        updateMessages('general', { text: error, type: 'error' });
-      } else if (csrf_token) {
-        updateData('csrf_token', csrf_token);
-      }
-    }
-  }
 
   useEffect(() => {
     const fetchFlow = async () => {
       await startFlow();
     };
     fetchFlow();
-  }, [flowId, flowType]);
+  }, [flowId, flowType, startFlow]);
 
   function setMethod(method: string) {
     updateData('method', method);

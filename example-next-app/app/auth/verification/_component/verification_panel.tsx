@@ -26,7 +26,7 @@ export function VerificationPanel({ flowId }: { flowId?: string }) {
     if (authFlow.flow.flow?.state === 'passed_challenge') {
       router.push('/');
     }
-  }, [authFlow.flow.flow?.state]);
+  }, [authFlow.flow.flow?.state, router]);
 
   if (
     authFlow.messages.general &&

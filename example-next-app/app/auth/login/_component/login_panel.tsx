@@ -22,10 +22,10 @@ export function LoginPanel({ flowId, returnTo }: { flowId?: string; returnTo?: s
     e?.preventDefault();
     const success =
       method === 'oidc'
-      ? await authFlow.updateFlow(
+        ? await authFlow.updateFlow(
           authFlow.createProviderSubmitData(provider!)
         )
-      : await authFlow.updateFlow();
+        : await authFlow.updateFlow();
     if (success) {
       authFlow.resetFlowData();
     }
@@ -33,7 +33,7 @@ export function LoginPanel({ flowId, returnTo }: { flowId?: string; returnTo?: s
 
   useEffect(() => {
     authFlow.setMethod('password');
-  }, [flowId]);
+  }, [flowId, authFlow]);
 
   return (
     <LoginForm

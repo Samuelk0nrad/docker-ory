@@ -76,7 +76,7 @@ export default async function HydraConsentPage({
         name: identity?.traits?.name ?? "",
         // Add any other traits you want in the JWT
       };
-    } catch (err) {
+    } catch{
       console.warn("[hydra/consent] No Kratos session found, using subject:", consentRequest.subject);
       // Fall back to just the subject if no Kratos session
       userClaims = {

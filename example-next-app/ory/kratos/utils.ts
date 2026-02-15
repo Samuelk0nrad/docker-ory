@@ -19,7 +19,7 @@ export function getCsrfToken(flow: { ui?: { nodes?: UiNode[] } }): {
       return { error: 'CSRF token not found' };
     }
     return { csrf_token: csrfToken };
-  } catch (error) {
+  } catch {
     return { error: 'An error occurred while retrieving the CSRF token' };
   }
 }
