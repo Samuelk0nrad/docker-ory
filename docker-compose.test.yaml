@@ -1,0 +1,112 @@
+services:
+  ##################
+  ####  hydra   ####
+  ##################
+  ory-hydra-migrate-test:
+    image: oryd/hydra:v2.2.0
+    command: migrate sql --yes sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+    networks:
+      - ory-bridge-test
+    environment:
+      SECRETS_SYSTEM: test-hydra-secret-key-change-me-in-production
+      DSN: sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+    volumes:
+      - hydra-test-data:/var/lib/sqlite
+
+  ory-hydra-test:
+    image: oryd/hydra:v2.2.0
+    command: serve all --config /etc/config/hydra/config.test.yaml --dev
+    container_name: hydra-test
+    networks:
+      - ory-bridge-test
+    ports:
+      - "6444:4444"
+      - "6445:4445"
+    depends_on:
+      ory-hydra-migrate-test:
+        condition: service_completed_successfully
+    environment:
+      SECRETS_SYSTEM: test-hydra-secret-key-change-me-in-production
+      DSN: sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+    volumes:
+      - ./hydra-config:/etc/config/hydra
+      - hydra-test-data:/var/lib/sqlite
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4444/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  ory-hydra-setup-test:
+    image: curlimages/curl:8.5.0
+    depends_on:
+      ory-hydra-test:
+        condition: service_healthy
+    restart: "no"
+    networks:
+      - ory-bridge-test
+    entrypoint: ["/bin/sh"]
+    command: /etc/config/hydra/setup.test.sh
+    volumes:
+      - ./hydra-setup:/etc/config/hydra
+
+  ##################
+  ####  kratos  ####
+  ##################
+  ory-kratos-migrate-test:
+    image: oryd/kratos:v25.4.0
+    command: -c /etc/config/kratos/config.test.yaml migrate sql -e -y
+    networks:
+      - ory-bridge-test
+    environment:
+      DSN: sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      SECRETS_DEFAULT: test-kratos-secret-key-change-me-in-production
+    volumes:
+      - ./kratos-config:/etc/config/kratos
+      - kratos-test-data:/var/lib/sqlite
+
+  ory-kratos-test:
+    image: oryd/kratos:v25.4.0
+    command: serve --config /etc/config/kratos/config.test.yaml --watch-courier
+    container_name: kratos-test
+    ports:
+      - "6544:4434"
+      - "6545:4433"
+    networks:
+      - ory-bridge-test
+    depends_on:
+      ory-kratos-migrate-test:
+        condition: service_completed_successfully
+    environment:
+      DSN: sqlite:///var/lib/sqlite/db.sqlite?_fk=true
+      SECRETS_DEFAULT: test-kratos-secret-key-change-me-in-production
+    volumes:
+      - ./kratos-config:/etc/config/kratos
+      - kratos-test-data:/var/lib/sqlite
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:4433/health/ready"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  ##################
+  ## smtp server  ##
+  ##################
+  mailslurper-test:
+    image: oryd/mailslurper:smtps-latest
+    ports:
+      - "6436:4436"
+      - "6437:4437"
+      - "6438:1025"
+    networks:
+      - ory-bridge-test
+
+volumes:
+  hydra-test-data:
+  kratos-test-data:
+
+networks:
+  ory-bridge-test:
+    driver: bridge

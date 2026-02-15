@@ -1,8 +1,30 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Example Next.js App with Ory Hydra & Kratos
+
+This is a [Next.js](https://nextjs.org) project demonstrating OAuth2/OIDC authentication flows using Ory Hydra and Ory Kratos. The application showcases:
+
+- OAuth2 Authorization Code Flow with PKCE
+- Hydra login, consent, and logout flows
+- Kratos self-service flows (registration, login, recovery, verification, settings)
+- Session management
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Docker and Docker Compose
+- Node.js 20+ (or Bun)
+- Environment variables configured (see `example.env`)
+
+### Development Server
+
+First, start the Ory services (Hydra, Kratos, Postgres):
+
+```bash
+# From the root directory
+docker compose up -d
+```
+
+Wait for services to be ready, then start the Next.js development server:
 
 ```bash
 npm run dev
@@ -14,23 +36,130 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Testing
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+This project includes comprehensive unit and integration tests for the authentication flows.
+
+### Test Setup
+
+The test suite uses:
+- **Jest** for test execution
+- **Testing Library** for React component testing
+- **Docker Compose** for isolated test environment (SQLite-backed Hydra/Kratos)
+
+### Running Tests
+
+```bash
+# Run all tests
+npm test
+
+# Run unit tests only
+npm run test:unit
+
+# Run integration tests (auto-starts test Docker stack)
+npm run test:integration
+
+# Run tests in watch mode
+npm run test:watch
+
+# Generate coverage report
+npm run test:coverage
+```
+
+### Test Structure
+
+```
+test/
+├── setup.ts                    # Jest configuration and global mocks
+├── helpers/
+│   └── flow-helpers.ts        # Utilities for OAuth/Kratos flows
+├── unit/
+│   ├── utils.test.ts          # Unit tests for utilities
+│   └── kratos-utils.test.ts   # Unit tests for Kratos helpers
+└── integration/
+    ├── oauth-flow.test.ts     # OAuth2 flow integration tests
+    ├── hydra-flow.test.ts     # Hydra login/consent/logout tests
+    └── kratos-flow.test.ts    # Kratos registration/login/recovery tests
+```
+
+### Integration Test Flow Coverage
+
+The integration tests validate the following happy-path flows:
+
+**OAuth2 Authorization Code Flow:**
+1. User registration in Kratos
+2. OAuth authorization initiation
+3. Login challenge handling
+4. Consent challenge handling
+5. Token exchange (authorization code → access/refresh tokens)
+6. Token refresh
+7. Token revocation
+
+**Kratos Self-Service Flows:**
+- Registration with password
+- Login with password
+- Account recovery
+- Email verification
+- Settings/profile updates
+- Session management
+
+**Hydra Admin Operations:**
+- OAuth2 client management
+- Login request handling
+- Consent request handling
+- Logout request handling
+
+### Test Environment
+
+Integration tests use a dedicated Docker Compose stack (`docker-compose.test.yaml`) with:
+- Isolated SQLite databases for Hydra and Kratos
+- Test-specific ports (6xxx range)
+- Test OAuth2 client pre-configured
+- Separate network namespace
+
+The test stack is automatically:
+- Started before integration tests (`pretest:integration`)
+- Torn down after tests complete (`posttest:integration`)
+
+### Environment Variables
+
+Test-specific environment variables are defined in `.env.test`:
+- Kratos public/admin URLs
+- Hydra public/admin URLs
+- Test OAuth2 client credentials
+- Test secrets (not for production)
+
+## Project Structure
+
+```
+app/
+├── api/
+│   ├── auth/              # OAuth endpoints (login, logout, refresh, session)
+│   └── hydra/             # Hydra callback handlers (login, consent, logout)
+├── auth/                  # Authentication UI pages
+└── settings/              # User settings page
+components/                # Reusable UI components
+hook/                      # React hooks (session management)
+lib/                       # Utility functions
+ory/
+├── hydra/                 # Hydra client integration
+└── kratos/                # Kratos flow handling
+```
 
 ## Learn More
 
-To learn more about Next.js, take a look at the following resources:
+To learn more about the technologies used:
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+- [Next.js Documentation](https://nextjs.org/docs)
+- [Ory Hydra Documentation](https://www.ory.sh/docs/hydra)
+- [Ory Kratos Documentation](https://www.ory.sh/docs/kratos)
+- [OAuth 2.0 RFC](https://oauth.net/2/)
+- [OpenID Connect](https://openid.net/connect/)
 
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
