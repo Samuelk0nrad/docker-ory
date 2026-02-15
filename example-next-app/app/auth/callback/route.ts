@@ -18,8 +18,15 @@ export async function GET(req: NextRequest) {
   // Validate state against cookie
   const cookieStore = await cookies();
   const expectedState = cookieStore.get("oauth_state")?.value;
+  const expectedNonce = cookieStore.get("oauth_nonce")?.value;
   const returnTo = cookieStore.get("oauth_return_to")?.value;
   const codeVerifier = cookieStore.get("oauth_pkce_verifier")?.value;
+  
+  // Always clear temporary cookies immediately to prevent reuse, even on error
+  cookieStore.set("oauth_state", "", { path: "/", maxAge: 0 });
+  cookieStore.set("oauth_nonce", "", { path: "/", maxAge: 0 });
+  cookieStore.set("oauth_pkce_verifier", "", { path: "/", maxAge: 0 });
+  cookieStore.set("oauth_return_to", "", { path: "/", maxAge: 0 });
   
   if (!state || !expectedState || state !== expectedState) {
     console.warn("[oauth callback] Invalid state parameter:", { state, expectedState });
@@ -32,10 +39,6 @@ export async function GET(req: NextRequest) {
       )
     );
   }
-
-  // Clear state cookie after validation
-  cookieStore.set("oauth_state", "", { path: "/", maxAge: 0 });
-  cookieStore.set("oauth_pkce_verifier", "", { path: "/", maxAge: 0 });
 
 
   // Handle OAuth errors
@@ -129,6 +132,23 @@ export async function GET(req: NextRequest) {
     }
 
     if (id_token) {
+      // Validate nonce in ID token to prevent replay attacks
+      if (expectedNonce) {
+        try {
+          // Decode ID token (without verification for nonce check only)
+          const payload = id_token.split(".")[1];
+          const decoded = JSON.parse(Buffer.from(payload, "base64").toString("utf-8"));
+          
+          if (decoded.nonce !== expectedNonce) {
+            console.error("[oauth callback] Nonce mismatch in ID token");
+            throw new Error("Invalid nonce in ID token");
+          }
+        } catch (error) {
+          console.error("[oauth callback] Failed to validate nonce:", error);
+          throw new Error("ID token nonce validation failed");
+        }
+      }
+      
       cookieStore.set("oauth_id_token", id_token, cookieOptions);
     }
 
@@ -157,10 +177,34 @@ export async function GET(req: NextRequest) {
       }
     );
 
-    // Redirect to home or stored return_to
-    const redirect = returnTo || appUrl;
-    console.log("[oauth callback] Login successful, redirecting to:", redirect);
-    return NextResponse.redirect(new URL(redirect, req.url));
+    // Validate and sanitize redirect URL to prevent open redirect vulnerability
+    let safeRedirect = appUrl;
+    if (returnTo) {
+      try {
+        // Parse the returnTo URL to validate it
+        const returnToUrl = new URL(returnTo, appUrl);
+        const appUrlParsed = new URL(appUrl);
+
+        // Only allow redirects to the same origin (same protocol, host, and port)
+        const allowedOrigins = [appUrlParsed.origin];
+        
+        if (allowedOrigins.includes(returnToUrl.origin)) {
+          // Use pathname + search to prevent protocol/host manipulation
+          safeRedirect = returnToUrl.pathname + returnToUrl.search;
+        } else {
+          console.warn("[oauth callback] Rejected external redirect:", returnTo);
+          // Fall back to app root for safety
+          safeRedirect = "/";
+        }
+      } catch (error) {
+        console.warn("[oauth callback] Invalid returnTo URL:", returnTo, error);
+        // Fall back to app root if parsing fails
+        safeRedirect = "/";
+      }
+    }
+    
+    console.log("[oauth callback] Login successful, redirecting to:", safeRedirect);
+    return NextResponse.redirect(new URL(safeRedirect, req.url));
   } catch (error) {
     console.error("[oauth callback] Error:", error);
     return NextResponse.redirect(

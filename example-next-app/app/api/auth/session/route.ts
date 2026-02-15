@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { createRemoteJWKSet, jwtVerify } from "jose";
 
 /**
  * OAuth Session Info API Route
@@ -20,25 +21,59 @@ export async function GET() {
       return NextResponse.json({ user: null });
     }
 
-    // Decode JWT ID token to extract user claims
-    const decodeJWT = (token: string) => {
-      try {
-        const payload = token.split(".")[1];
-        if (!payload) return null;
-        const decoded = Buffer.from(payload, "base64").toString("utf-8");
-        return JSON.parse(decoded);
-      } catch (err) {
-        console.error("Failed to decode JWT:", err);
-        return null;
+    // Get Hydra's JWKS endpoint for JWT signature verification
+    // TODO: move hydraPublicUrl to ory/hydra/ folder
+    const hydraPublicUrl =
+      process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ?? 
+      process.env.HYDRA_PUBLIC_BASE_URL ?? 
+      "http://localhost:5444";
+    const jwksUri = `${hydraPublicUrl}/.well-known/jwks.json`;
+    
+    // Create JWKS client for signature verification
+    const JWKS = createRemoteJWKSet(new URL(jwksUri));
+    
+    // Verify JWT signature and decode claims
+    let idTokenClaims;
+    try {
+      const { payload } = await jwtVerify(idToken, JWKS, {
+        issuer: hydraPublicUrl, // Verify issuer matches Hydra
+        // jwtVerify automatically validates exp claim and throws if expired
+      });
+      idTokenClaims = payload;
+      
+      // Additional explicit expiry check for clarity and logging
+      if (idTokenClaims.exp) {
+        const currentTime = Math.floor(Date.now() / 1000);
+        if (currentTime >= idTokenClaims.exp) {
+          console.warn("[auth/session] Token expired:", {
+            exp: idTokenClaims.exp,
+            now: currentTime,
+          });
+          throw new Error("Token expired");
+        }
       }
-    };
-
-    const idTokenClaims = decodeJWT(idToken);
-    const meta = tokenMeta ? JSON.parse(tokenMeta) : null;
-
-    if (!idTokenClaims) {
-      return NextResponse.json({ user: null });
+    } catch (verifyError) {
+      console.error("[auth/session] JWT verification failed:", verifyError);
+      
+      // Clear expired/invalid tokens
+      cookieStore.set("oauth_id_token", "", { path: "/", maxAge: 0 });
+      cookieStore.set("oauth_access_token", "", { path: "/", maxAge: 0 });
+      cookieStore.set("oauth_token_meta", "", { path: "/", maxAge: 0 });
+      
+      const errorMessage = verifyError instanceof Error ? verifyError.message : "Invalid token";
+      const isExpired = errorMessage.includes("expired") || errorMessage.includes("exp");
+      
+      return NextResponse.json(
+        { 
+          user: null, 
+          error: isExpired ? "Token expired" : "Invalid token",
+          expired: isExpired,
+        }, 
+        { status: 401 }
+      );
     }
+
+    const meta = tokenMeta ? JSON.parse(tokenMeta) : null;
 
     // Extract user information from ID token claims
     const user = {

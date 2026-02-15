@@ -1,68 +1,46 @@
+> a lot of these issues are already fixed or they are not relevant anymore. make sure to check the codebase the the current architecuture before fixing any of these issues. 
+
+> make sure after every fix to run the tests and check if they are still passing, + run linting and type checks + build the app to ensure there are no errors.
+
+> after fixing one issue mark them as fixed in this list!!
+
 ## **🔴 CRITICAL SECURITY ISSUES**
 
-### 1. **Missing PKCE (Proof Key for Code Exchange)**
-The OAuth flow does **NOT** implement PKCE, which is a critical security measure for public clients and recommended even for confidential clients:
-- No `code_challenge` or `code_verifier` generation in app/api/auth/login/route.ts
-- Without PKCE, the authorization code can be intercepted and used by attackers
-- **Recommendation**: Implement PKCE flow with `S256` challenge method
+### ✅ 4. **Missing Nonce Parameter for OIDC** - FIXED
+- ✅ Added `nonce` parameter generation in OAuth flow initiation
+- ✅ Stored nonce in secure httpOnly cookie
+- ✅ Implemented nonce validation in ID token before storing
+- ✅ Prevents replay attacks in OIDC flow
 
-- fixed
+### ✅ 5. **No JWT Signature Verification** - FIXED
+- ✅ Installed `jose` library for secure JWT operations
+- ✅ Replaced unsafe JWT decoding with proper signature verification
+- ✅ Implemented verification against Hydra's JWKS endpoint
+- ✅ Added issuer validation to ensure token is from Hydra
+- ✅ Invalid tokens are rejected with 401 and cleared from cookies
+- ✅ **CRITICAL FIX**: Now impossible to craft fake tokens
 
-### 2. **Client Secret Exposed in Environment Variables**
-- The `OAUTH_CLIENT_SECRET` (`dev-secret`) is stored in plain text in example.env
-- This secret could be exposed if .env files are accidentally committed
-- **Recommendation**: Use secret management systems (Vault, AWS Secrets Manager) in production
-
-- not an issue in dev mode
-
-### 3. **Insecure Cookie Settings in Development**
-In app/auth/callback/route.ts:
-```typescript
-secure: isProduction,
-sameSite: "lax" as const,
-```
-- `SameSite: Lax` allows cookies on top-level navigation, making it vulnerable to CSRF attacks
-- Should be `SameSite: Strict` for OAuth tokens
-- **Recommendation**: Use `sameSite: "strict"` for security-critical cookies
-
-### 4. **Missing Nonce Parameter for OIDC**
-- The OpenID Connect flow should include a `nonce` parameter to prevent replay attacks
-- Currently only `state` is used for CSRF protection
-- **Recommendation**: Generate and validate `nonce` in ID token
-
-### 5. **No JWT Signature Verification**
-In app/api/auth/session/route.ts, ID tokens are decoded without verification:
-```typescript
-const decodeJWT = (token: string) => {
-  const payload = token.split(".")[1];
-  const decoded = Buffer.from(payload, "base64").toString("utf-8");
-  return JSON.parse(decoded);
-};
-```
-- **CRITICAL**: JWT signatures are never verified! Anyone can craft fake tokens
-- **Recommendation**: Use a proper JWT library (like `jsonwebtoken` or `jose`) to verify signatures against Hydra's JWKS endpoint
-
-### 6. **Potential Open Redirect Vulnerability**
-In app/auth/callback/route.ts:
-```typescript
-const redirect = returnTo || appUrl;
-return NextResponse.redirect(new URL(redirect, req.url));
-```
-- The `returnTo` parameter from cookies could be manipulated
-- **Recommendation**: Validate `returnTo` against a whitelist of allowed paths/domains
+### ✅ 6. **Potential Open Redirect Vulnerability** - FIXED
+- ✅ Implemented origin validation for `returnTo` parameter
+- ✅ Only allows redirects to same origin (protocol, host, port)
+- ✅ Falls back to root path ("/") for invalid or external URLs
+- ✅ Added error handling for malformed URLs
+- ✅ Prevents attackers from redirecting users to phishing sites
 
 ## **🟠 HIGH SEVERITY ISSUES**
 
-### 7. **Missing Rate Limiting**
+### 🔴 ✅ 🔴 7. **Missing Rate Limiting** - Later with proxy / other infra
 - No rate limiting on OAuth endpoints (`/api/auth/login`, `/api/hydra/login`, etc.)
 - Vulnerable to brute force and DoS attacks
-- **Recommendation**: Implement rate limiting middleware
+- **Recommendation**: Implement rate limiting Proxy-level (e.g. Nginx)
 
-### 8. **Insufficient Token Expiry Validation**
-In app/api/auth/session/route.ts, expiry is checked but stale tokens aren't actively invalidated:
-- No server-side validation that token hasn't expired
-- Client-side refresh logic could fail silently
-- **Recommendation**: Check `exp` claim server-side and return 401 for expired tokens
+### ✅ 8. **Insufficient Token Expiry Validation** - FIXED
+- ✅ Added explicit server-side token expiry validation using `exp` claim
+- ✅ `jwtVerify` from jose library automatically validates expiry
+- ✅ Added additional explicit expiry check with clear logging
+- ✅ Expired tokens return 401 with `expired: true` flag
+- ✅ All token cookies (id_token, access_token, token_meta) are cleared on expiry
+- ✅ Client receives clear indication when token has expired for proper refresh logic
 
 ### 9. **No Hydra Admin API Authentication**
 ory/hydra/hydra.ts shows the Hydra Admin API has no authentication:
@@ -76,16 +54,12 @@ export const hydraAdmin = new OAuth2Api(
 - If exposed, anyone could accept login/consent requests
 - **Recommendation**: Ensure Admin API is only accessible from Next.js backend (network isolation)
 
-### 10. **State Cookie Not Cleared on Error**
-In app/auth/callback/route.ts, state cookie is only cleared after successful validation:
-```typescript
-if (!state || !expectedState || state !== expectedState) {
-  return NextResponse.redirect(...);
-}
-cookieStore.set("oauth_state", "", { path: "/", maxAge: 0 });
-```
-- If validation fails, the state cookie persists
-- **Recommendation**: Clear state cookie before returning error
+### ✅ 10. **State Cookie Not Cleared on Error** - FIXED
+- ✅ Moved cookie clearing to happen immediately after retrieving values
+- ✅ State, nonce, PKCE verifier, and returnTo cookies now cleared before validation
+- ✅ Prevents cookie reuse even when validation fails
+- ✅ Protects against CSRF attacks by ensuring one-time use of state values
+- ✅ All temporary OAuth cookies cleared regardless of success or error
 
 ## **🟡 MEDIUM SEVERITY ISSUES**
 
@@ -147,19 +121,3 @@ No audit trail for authentication events (login, logout, token refresh)
 
 ### 20. **Missing Request ID / Correlation ID**
 No request tracking across the OAuth flow for debugging
-
-## **📋 SUMMARY OF FINDINGS**
-
-| Severity | Count | Key Issues |
-|----------|-------|------------|
-| 🔴 Critical | 6 | No PKCE, No JWT verification, Exposed secrets |
-| 🟠 High | 4 | No rate limiting, Missing token validation |
-| 🟡 Medium | 5 | Missing headers, Incomplete logout |
-| 🟢 Low | 5 | No middleware, Console logs |
-
-**Most Urgent Fixes:**
-1. ✅ Implement JWT signature verification
-2. ✅ Add PKCE support
-3. ✅ Change `SameSite` to `Strict`
-4. ✅ Implement rate limiting
-5. ✅ Add security headers

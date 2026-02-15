@@ -60,9 +60,22 @@ export async function GET(req: NextRequest) {
     const state = crypto.randomUUID(); // 36 chars
     authUrl.searchParams.set("state", state);
 
+    // Generate nonce for replay attack prevention (OIDC best practice)
+    const nonce = crypto.randomUUID(); // 36 chars
+    authUrl.searchParams.set("nonce", nonce);
+
     // Set state cookie for callback validation (short-lived, 10 min)
     const cookieStore = await cookies();
     cookieStore.set("oauth_state", state, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict" as const,
+      path: "/",
+      maxAge: 600, // 10 minutes
+    });
+
+    // Set nonce cookie for ID token validation (short-lived, 10 min)
+    cookieStore.set("oauth_nonce", nonce, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict" as const,
