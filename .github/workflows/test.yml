@@ -41,8 +41,12 @@ jobs:
 
       - name: Start Next.js in test mode
         working-directory: ./example-next-app
+        env:
+          NODE_ENV: test
+          KRATOS_PUBLIC_BASE_URL: http://localhost:6545
+          HYDRA_PUBLIC_BASE_URL: http://localhost:6444
         run: |
-          NODE_ENV=test bun run next dev -p 3001 &
+          bun run next dev -p 3001 &
           NEXTJS_PID=$!
           echo "NEXTJS_PID=$NEXTJS_PID" >> $GITHUB_ENV
           

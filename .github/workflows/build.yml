@@ -30,6 +30,15 @@ jobs:
           NEXT_PUBLIC_KRATOS_URL: http://localhost:5545
           NEXT_PUBLIC_HYDRA_URL: http://localhost:5444
           NEXT_PUBLIC_APP_URL: http://localhost:3000
+          NEXT_PUBLIC_APP_DOMAIN: http://localhost:3000
+          NEXT_PUBLIC_KRATOS_PUBLIC_URL: http://localhost:3000/api/.ory/kratos
+          NEXT_PUBLIC_HYDRA_PUBLIC_URL: http://localhost:3000/api/.ory/hydra
+
+          KRATOS_PUBLIC_BASE_URL: http://localhost:5545
+          HYDRA_PUBLIC_BASE_URL: http://localhost:5444
+          HYDRA_ADMIN_URL: http://localhost:5445
+
+          NEXT_PUBLIC_OAUTH_CLIENT_ID: frontend-app
 
       - name: Build Summary
         if: always()

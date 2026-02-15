@@ -48,6 +48,8 @@ echo -e "${GREEN}✅ Docker services ready${NC}\n"
 
 # Step 3: Start Next.js in test mode
 echo -e "${YELLOW}🔧 Starting Next.js in test mode...${NC}"
+KRATOS_PUBLIC_BASE_URL=http://localhost:6545 \
+HYDRA_PUBLIC_BASE_URL=http://localhost:6444 \
 NODE_ENV=test bun run next dev -p 3001 > /dev/null 2>&1 &
 NEXTJS_PID=$!
 
