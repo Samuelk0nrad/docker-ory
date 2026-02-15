@@ -1,18 +1,20 @@
 'use client';
-import { Identity, Session } from '@ory/client';
 import { createContext } from 'react';
 
+export type User = {
+  id: string;
+  email: string;
+  name?: string;
+};
+
 type SessionContextType = {
-  session?: Session;
-  refrashSession: () => Promise<void>;
-  user?: Identity; // Replace with your user type
+  user?: User;
   loading: boolean;
   isLoggedIn: boolean;
   error?: string | null;
-  // OAuth-related fields
-  accessTokenClaims?: Record<string, any>;
   login: (returnTo?: string) => void;
   logout: () => Promise<void>;
+  refreshSession: () => Promise<void>;
 };
 
 export const SessionContext = createContext<SessionContextType | undefined>(

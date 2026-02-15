@@ -1,147 +1,193 @@
 'use client';
 
-import { kratos } from '@/ory/kratos/kratos';
-import { Identity, Session } from '@ory/client';
-import { useEffect, useState } from 'react';
-import { SessionContext } from './session_context';
+import { useEffect, useRef, useState } from 'react';
+import { SessionContext, User } from './session_context';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
-  const [session, setSession] = useState<Session | undefined>(undefined);
-  const [user, setUser] = useState<Identity | undefined>(undefined);
+  const [user, setUser] = useState<User | undefined>(undefined);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [expiresAt, setExpiresAt] = useState<number | null>(null);
+  const [hasRefreshToken, setHasRefreshToken] = useState<boolean>(false);
   
-  // OAuth state
-  const [accessTokenClaims, setAccessTokenClaims] = useState<
-    Record<string, any> | undefined
-  >(undefined);
-  const [isOAuthSession, setIsOAuthSession] = useState<boolean>(false);
+  const refreshTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  const refrashSession = async () => {
-    kratos
-      .toSession()
-      .then(({ data }) => {
-        setSession(data);
-        setUser(data.identity);
-        setLoading(false);
-      })
-      .catch((err) => {
-        setSession(undefined);
+  // Fetch session from API
+  const fetchSession = async () => {
+    try {
+      const response = await fetch('/api/auth/session');
+      
+      if (response.ok) {
+        const data = await response.json();
+        
+        if (data.user) {
+          setUser(data.user);
+          setExpiresAt(data.expiresAt);
+          setHasRefreshToken(data.hasRefreshToken || false);
+          setError(null);
+          
+          // Schedule auto-refresh 1 minute before expiry
+          if (data.expiresAt && data.hasRefreshToken) {
+            scheduleTokenRefresh(data.expiresAt);
+          }
+        } else {
+          setUser(undefined);
+          setExpiresAt(null);
+          setHasRefreshToken(false);
+        }
+      } else if (response.status === 401) {
         setUser(undefined);
-        setLoading(false);
-        setError(err.message);
+        setExpiresAt(null);
+        setHasRefreshToken(false);
+        setError(null);
+      } else {
+        throw new Error('Failed to fetch session');
+      }
+    } catch (err) {
+      console.error('Failed to fetch session:', err);
+      setError(err instanceof Error ? err.message : 'Failed to fetch session');
+      setUser(undefined);
+      setExpiresAt(null);
+      setHasRefreshToken(false);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh the OAuth token
+  const refreshToken = async () => {
+    try {
+      const response = await fetch('/api/auth/refresh', { method: 'POST' });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setExpiresAt(data.expiresAt);
+        setError(null);
+        
+        // Schedule next refresh
+        if (data.expiresAt && hasRefreshToken) {
+          scheduleTokenRefresh(data.expiresAt);
+        }
+        
+        // Refetch session to get updated user data
+        await fetchSession();
+      } else if (response.status === 401) {
+        // Refresh token expired or invalid
+        if (hasRefreshToken) {
+          // Had a refresh token but it failed - redirect to login
+          setUser(undefined);
+          setExpiresAt(null);
+          setHasRefreshToken(false);
+          login();
+        } else {
+          // No refresh token - just clear session
+          setUser(undefined);
+          setExpiresAt(null);
+          setHasRefreshToken(false);
+        }
+      } else {
+        throw new Error('Token refresh failed');
+      }
+    } catch (err) {
+      console.error('Failed to refresh token:', err);
+      if (hasRefreshToken) {
+        // Had a refresh token but refresh failed - redirect to login
+        login();
+      }
+    }
+  };
+
+  // Schedule token refresh 1 minute before expiry
+  const scheduleTokenRefresh = (expiresAtTimestamp: number) => {
+    // Clear existing timeout
+    if (refreshTimeoutRef.current) {
+      clearTimeout(refreshTimeoutRef.current);
+    }
+
+    const now = Date.now();
+    const expiresIn = expiresAtTimestamp - now;
+    const refreshIn = Math.max(0, expiresIn - 60000); // 1 minute before expiry
+
+    refreshTimeoutRef.current = setTimeout(() => {
+      refreshToken();
+    }, refreshIn);
+  };
+
+  // Start OAuth login flow
+  const login = (returnTo?: string) => {
+    // Build query params
+    const params = new URLSearchParams();
+    if (returnTo) {
+      params.set('returnTo', returnTo);
+    }
+    
+    // Fetch authorization URL from server
+    fetch(`/api/auth/login?${params.toString()}`)
+      .then(response => response.json())
+      .then(data => {
+        if (data.authorizationUrl) {
+          window.location.href = data.authorizationUrl;
+        } else {
+          setError('Failed to start login flow');
+        }
+      })
+      .catch(err => {
+        console.error('Failed to start login:', err);
+        setError('Failed to start login flow');
       });
   };
 
-  // Check for OAuth session in parallel
-  const checkOAuthSession = async () => {
-    try {
-      const response = await fetch('/api/auth/session');
-      if (response.ok) {
-        const data = await response.json();
-        if (data.isAuthenticated && data.isOAuthSession) {
-          setIsOAuthSession(true);
-          setAccessTokenClaims(data.accessTokenClaims);
-        } else {
-          setIsOAuthSession(false);
-          setAccessTokenClaims(undefined);
-        }
-      } else {
-        setIsOAuthSession(false);
-        setAccessTokenClaims(undefined);
-      }
-    } catch (err) {
-      console.error('Failed to check OAuth session:', err);
-      setIsOAuthSession(false);
-      setAccessTokenClaims(undefined);
-    }
-  };
-
-  // Start OAuth2 authorization flow
-  const startOAuthFlow = (returnTo?: string) => {
-    const hydraPublicUrl =
-      process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ?? '/api/.ory/hydra';
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'http://localhost:3000';
-    const redirectUri = `${appUrl}/auth/callback`;
-    const clientId = process.env.NEXT_PUBLIC_OAUTH_CLIENT_ID ?? 'frontend-app';
-
-    const authUrl = new URL(`${hydraPublicUrl}/oauth2/auth`);
-    authUrl.searchParams.set('client_id', clientId);
-    authUrl.searchParams.set('response_type', 'code');
-    authUrl.searchParams.set('scope', 'openid profile email offline');
-    authUrl.searchParams.set('redirect_uri', redirectUri);
-
-    // Always generate a strong random state (>= 8 chars)
-    const state = crypto.randomUUID(); // 36 chars
-    authUrl.searchParams.set('state', state);
-
-    // Store state + returnTo in short-lived cookies for callback validation
-    document.cookie = `oauth_state=${state}; Path=/; Max-Age=600; SameSite=Lax`;
-    if (returnTo) {
-      document.cookie = `oauth_return_to=${encodeURIComponent(
-        returnTo
-      )}; Path=/; Max-Age=600; SameSite=Lax`;
-    }
-
-    window.location.href = authUrl.toString();
-  };
-
-  // Logout from both OAuth and Kratos sessions
+  // Logout
   const logout = async () => {
     try {
-      // If OAuth session exists, initiate Hydra logout
-      if (isOAuthSession) {
-        const hydraPublicUrl =
-          process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ?? '/api/.ory/hydra';
-        const appUrl =
-          typeof window !== 'undefined' ? window.location.origin : 'http://localhost:3000';
-        
-        // Redirect to Hydra's logout endpoint
-        // This will call our /auth/hydra/logout page which handles both sessions
-        window.location.href = `${hydraPublicUrl}/oauth2/sessions/logout`;
-        return;
-      }
+      const response = await fetch('/api/auth/logout', { method: 'POST' });
       
-      // Otherwise, just logout from Kratos
-      const { data: logoutFlow } = await kratos.createBrowserLogoutFlow();
-      if (logoutFlow.logout_url) {
-        window.location.href = logoutFlow.logout_url;
+      if (response.ok) {
+        setUser(undefined);
+        setExpiresAt(null);
+        setHasRefreshToken(false);
+        setError(null);
+        
+        // Clear refresh timeout
+        if (refreshTimeoutRef.current) {
+          clearTimeout(refreshTimeoutRef.current);
+          refreshTimeoutRef.current = null;
+        }
+        
+        // Redirect to home
+        window.location.href = '/';
+      } else {
+        throw new Error('Logout failed');
       }
     } catch (err) {
       console.error('Logout failed:', err);
-      // Fallback: try to logout from Kratos directly
-      try {
-        const { data: logoutFlow } = await kratos.createBrowserLogoutFlow();
-        if (logoutFlow.logout_url) {
-          window.location.href = logoutFlow.logout_url;
-        }
-      } catch (fallbackErr) {
-        console.error('Fallback logout also failed:', fallbackErr);
-        setError('Logout failed');
-      }
+      setError(err instanceof Error ? err.message : 'Logout failed');
     }
   };
 
-  const isLoggedIn = !!session || isOAuthSession;
+  const isLoggedIn = !!user;
 
   useEffect(() => {
-    // Check both Kratos and OAuth sessions in parallel
-    Promise.all([refrashSession(), checkOAuthSession()]);
+    fetchSession();
+    
+    // Cleanup refresh timeout on unmount
+    return () => {
+      if (refreshTimeoutRef.current) {
+        clearTimeout(refreshTimeoutRef.current);
+      }
+    };
   }, []);
 
   return (
     <SessionContext.Provider
       value={{
-        session,
-        refrashSession,
         user,
         loading,
         isLoggedIn,
         error,
-        accessTokenClaims,
-        login: startOAuthFlow,
+        login,
         logout,
+        refreshSession: fetchSession,
       }}
     >
       {children}

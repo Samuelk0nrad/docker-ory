@@ -4,32 +4,23 @@ import { cookies } from "next/headers";
 /**
  * OAuth Session Info API Route
  *
- * Returns decoded claims from the OAuth access token and ID token
- * stored in httpOnly cookies. Does NOT expose the raw tokens to the client.
+ * Returns user information and session metadata from OAuth tokens.
+ * Does NOT expose raw tokens to the client (httpOnly cookies).
  *
  * GET /api/auth/session
  */
 export async function GET(req: NextRequest) {
   try {
     const cookieStore = await cookies();
-    const accessToken = cookieStore.get("oauth_access_token")?.value;
     const idToken = cookieStore.get("oauth_id_token")?.value;
     const tokenMeta = cookieStore.get("oauth_token_meta")?.value;
+    const refreshToken = cookieStore.get("oauth_refresh_token")?.value;
 
-    if (!accessToken && !idToken) {
-      console.log("[auth/session] No OAuth tokens found in cookies", {
-        accessToken: accessToken,
-        idToken: idToken,
-        tokenMeta: tokenMeta,
-      });
-      return NextResponse.json(
-        { isAuthenticated: false, error: "No OAuth tokens found" },
-        { status: 401 }
-      );
+    if (!idToken) {
+      return NextResponse.json({ user: null });
     }
 
-    // Decode JWT tokens (without verification for BFF pattern)
-    // In production, you might want to verify against Hydra's JWKS
+    // Decode JWT ID token to extract user claims
     const decodeJWT = (token: string) => {
       try {
         const payload = token.split(".")[1];
@@ -42,28 +33,33 @@ export async function GET(req: NextRequest) {
       }
     };
 
-    const accessTokenClaims = accessToken ? decodeJWT(accessToken) : null;
-    const idTokenClaims = idToken ? decodeJWT(idToken) : null;
+    const idTokenClaims = decodeJWT(idToken);
     const meta = tokenMeta ? JSON.parse(tokenMeta) : null;
 
-    // Check if token is expired
-    const isExpired = meta?.expires_at
-      ? Date.now() >= meta.expires_at
-      : false;
+    if (!idTokenClaims) {
+      return NextResponse.json({ user: null });
+    }
+
+    // Extract user information from ID token claims
+    const user = {
+      id: idTokenClaims.sub || "",
+      email: idTokenClaims.email || "",
+      name: idTokenClaims.name || idTokenClaims.preferred_username || undefined,
+    };
+
+    // Calculate expiration time
+    const expiresAt = meta?.expires_at || (idTokenClaims.exp ? idTokenClaims.exp * 1000 : null);
 
     return NextResponse.json({
-      isAuthenticated: !isExpired,
-      isOAuthSession: true,
-      accessTokenClaims,
-      idTokenClaims,
-      metadata: meta,
-      needsRefresh: isExpired,
+      user,
+      expiresAt,
+      hasRefreshToken: !!refreshToken,
     });
   } catch (error) {
     console.error("[auth/session] Error:", error);
     return NextResponse.json(
       {
-        isAuthenticated: false,
+        user: null,
         error: error instanceof Error ? error.message : "Failed to read session",
       },
       { status: 500 }

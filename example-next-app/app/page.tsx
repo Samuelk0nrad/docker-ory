@@ -4,17 +4,17 @@ import { Button } from '@/components/ui/button';
 import { useSession } from '@/hook/auth/session_hook';
 
 export default function Home() {
-  const { session, user, isLoggedIn, login } = useSession();
+  const { user, isLoggedIn, login } = useSession();
 
   if (isLoggedIn) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
         <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
           <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            Welcome, {user?.traits.name || user?.traits.email}!
+            Welcome, {user?.name || user?.email}!
           </h1>
           <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            You are logged in. Your session ID is: {session?.id}
+            You are logged in. Your user ID is: {user?.id}
           </p>
         </main>
       </div>
@@ -49,5 +49,3 @@ export default function Home() {
     </div>
   );
 }
-
-//http://localhost:3000/auth/login?error=invalid_state&error_description=The state is missing or does not have enough characters and is therefore considered too weak. Request parameter %27state%27 must be at least be 8 characters long to ensure sufficient entropy.

@@ -18,8 +18,10 @@ export async function GET(req: NextRequest) {
   // Validate state against cookie
   const cookieStore = await cookies();
   const expectedState = cookieStore.get("oauth_state")?.value;
+  const returnTo = cookieStore.get("oauth_return_to")?.value;
   
   if (!state || !expectedState || state !== expectedState) {
+    console.warn("[oauth callback] Invalid state parameter:", { state, expectedState });
     return NextResponse.redirect(
       new URL(
         `/auth/login?error=invalid_state&error_description=${encodeURIComponent(
@@ -146,8 +148,9 @@ export async function GET(req: NextRequest) {
     );
 
     // Redirect to home or stored return_to
-    const returnTo = state ? decodeURIComponent(state) : "/";
-    return NextResponse.redirect(new URL(returnTo, req.url));
+    const redirect = returnTo || appUrl;
+    console.log("[oauth callback] Login successful, redirecting to:", redirect);
+    return NextResponse.redirect(new URL(redirect, req.url));
   } catch (error) {
     console.error("[oauth callback] Error:", error);
     return NextResponse.redirect(
