@@ -33,7 +33,7 @@ export function LoginPanel({ flowId, returnTo }: { flowId?: string; returnTo?: s
 
   useEffect(() => {
     authFlow.setMethod('password');
-  }, [flowId, authFlow]);
+  }, [flowId]);
 
   return (
     <LoginForm

@@ -5,7 +5,7 @@ import {
   UiNodeInputAttributes,
 } from '@ory/client';
 import { AxiosError } from 'axios';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
 import { FlowTypeEnum } from './flow/types/FlowTypes';
@@ -27,13 +27,13 @@ export function useAuthFlow<
   const [isLoading, setIsLoading] = useState(false);
 
   const updateData = useCallback((key: string, value: unknown) => {
-    const updated = key.includes('.')
-      ? setNestedValue(data as Record<string, unknown>, key, value)
-      : { ...data, [key]: value };
     setData((prev) => {
+      const updated = key.includes('.')
+        ? setNestedValue(prev as Record<string, unknown>, key, value)
+        : { ...prev, [key]: value };
       return { ...prev, ...updated };
     });
-  }, [data, setData]);
+  }, [setData]);
 
   const updateMessages = useCallback((key: string, value: UiTextMessage) => {
     setMessages((prev) => ({ ...prev, [key]: value }));
@@ -223,7 +223,7 @@ export function useAuthFlow<
       await startFlow();
     };
     fetchFlow();
-  }, [flowId, flowType, startFlow]);
+  }, [startFlow]);
 
   function setMethod(method: string) {
     updateData('method', method);
@@ -272,7 +272,7 @@ export function useAuthFlow<
     };
   }
 
-  return {
+  return useMemo(() => ({
     flow,
     data,
     messages,
@@ -285,5 +285,18 @@ export function useAuthFlow<
     mapProvider,
     updateFlow,
     createProviderSubmitData,
-  };
+  }), [
+    flow,
+    data,
+    messages,
+    isLoading,
+    startFlow,
+    setMethod,
+    updateData,
+    updateMessages,
+    resetFlowData,
+    mapProvider,
+    updateFlow,
+    createProviderSubmitData,
+  ]);
 }
