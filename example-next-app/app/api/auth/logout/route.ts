@@ -30,6 +30,17 @@ export async function POST() {
       });
     }
 
+    // Clear Kratos session cookies (any cookie starting with ory_kratos_session)
+    const kratosCookies = cookieStore
+      .getAll()
+      .filter((cookie) => cookie.name.startsWith("ory_kratos_session"));
+    for (const cookie of kratosCookies) {
+      cookieStore.set(cookie.name, "", {
+        path: "/",
+        maxAge: 0,
+      });
+    }
+
     // Optional: Call Hydra's revocation endpoint to invalidate tokens
     // This is a best practice for security but not required for client-side logout
     const accessToken = cookieStore.get("oauth_access_token")?.value;
@@ -60,8 +71,23 @@ export async function POST() {
       }
     }
 
+    // Build Hydra logout URL to terminate SSO session
+    // TODO: move hydraPublicUrl and appUrl to a shared config file
+    const hydraPublicUrl =
+      process.env.HYDRA_PUBLIC_BASE_URL ??
+      process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ??
+      "http://localhost:5444";
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_URL ??
+      process.env.NEXT_PUBLIC_APP_DOMAIN ??
+      "http://localhost:3000";
+    const logoutUrl = `${hydraPublicUrl}/oauth2/sessions/logout?return_to=${encodeURIComponent(
+      appUrl
+    )}`;
+
     return NextResponse.json({
       success: true,
+      logoutUrl,
     });
   } catch (error) {
     console.error("[auth/logout] Error:", error);

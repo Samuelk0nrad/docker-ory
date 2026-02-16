@@ -148,6 +148,7 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
       const response = await fetch('/api/auth/logout', { method: 'POST' });
 
       if (response.ok) {
+        const data = await response.json().catch(() => ({} as { logoutUrl?: string }));
         setUser(undefined);
         setExpiresAt(null);
         setHasRefreshToken(false);
@@ -159,8 +160,12 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           refreshTimeoutRef.current = null;
         }
 
-        // Redirect to home
-        window.location.href = '/';
+        // Redirect to Hydra logout URL if provided, otherwise home
+        if (data.logoutUrl) {
+          window.location.href = data.logoutUrl;
+        } else {
+          window.location.href = '/';
+        }
       } else {
         throw new Error('Logout failed');
       }
