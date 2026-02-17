@@ -9,9 +9,10 @@ const isProduction = process.env.NODE_ENV === "production";
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN || "https://placeholder@placeholder.ingest.sentry.io/placeholder",
 
+  environment: process.env.NODE_ENV || "development",
+
   // Define how likely traces are sampled. Adjust this value in production, or use tracesSampler for greater control.
   tracesSampleRate: isProduction ? 0.1 : 1,
-  environment: process.env.NODE_ENV || "development",
 
   // Enable logs to be sent to Sentry
   enableLogs: true,

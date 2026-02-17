@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { SessionContext, User } from './session_context';
 
 export function SessionProvider({ children }: { children: React.ReactNode }) {
@@ -42,6 +43,13 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
           setExpiresAt(data.expiresAt);
           setHasRefreshToken(data.hasRefreshToken || false);
           setError(null);
+
+          // Set Sentry user context
+          Sentry.setUser({
+            id: data.user.id,
+            email: data.user.email,
+            username: data.user.name,
+          });
 
           // Schedule auto-refresh 1 minute before expiry
           if (data.expiresAt && data.hasRefreshToken) {
@@ -153,6 +161,9 @@ export function SessionProvider({ children }: { children: React.ReactNode }) {
         setExpiresAt(null);
         setHasRefreshToken(false);
         setError(null);
+
+        // Clear Sentry user context
+        Sentry.setUser(null);
 
         // Clear refresh timeout
         if (refreshTimeoutRef.current) {
