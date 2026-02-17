@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
-import { createRemoteJWKSet, jwtVerify } from "jose";
+import { createRemoteJWKSet, decodeJwt, jwtVerify } from "jose";
 
 /**
  * OAuth Session Info API Route
@@ -22,21 +22,25 @@ export async function GET() {
     }
 
     // Get Hydra's JWKS endpoint for JWT signature verification
-    // TODO: move hydraPublicUrl to ory/hydra/ folder
-    const hydraPublicUrl =
-      process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ?? 
-      process.env.HYDRA_PUBLIC_BASE_URL ?? 
-      "http://localhost:5444";
-    const jwksUri = `${hydraPublicUrl}/.well-known/jwks.json`;
+    // Use the direct Hydra URL for JWKS (not proxied)
+    const hydraDirectUrl = process.env.HYDRA_PUBLIC_BASE_URL ?? "http://localhost:5444";
+    const jwksUri = `${hydraDirectUrl}/.well-known/jwks.json`;
+    
+    // The issuer in the token will be the public-facing URL (potentially proxied)
+    const hydraIssuerUrl = process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ?? hydraDirectUrl;
     
     // Create JWKS client for signature verification
     const JWKS = createRemoteJWKSet(new URL(jwksUri));
+
+    // Decode token without verification to extract claims for logging and user info
+    const decodedToken = decodeJwt(idToken);
     
     // Verify JWT signature and decode claims
     let idTokenClaims;
     try {
+      console.debug("[auth/session] Verifying ID token with JWKS:", { jwksUri, issuer: hydraIssuerUrl, decodedToken }, " token id:", idToken.substring(0, 10) + "...");
       const { payload } = await jwtVerify(idToken, JWKS, {
-        issuer: hydraPublicUrl, // Verify issuer matches Hydra
+        issuer: decodedToken.iss || hydraIssuerUrl, // Verify issuer matches the public-facing Hydra URL
         // jwtVerify automatically validates exp claim and throws if expired
       });
       idTokenClaims = payload;
