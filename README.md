@@ -17,12 +17,29 @@ Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos
 
 ## Quick Start
 
+### Option 1: Docker (Recommended - Full Stack)
+
+Run everything including the Next.js app in Docker:
+
 1. Clone repository: `git clone git@github.com:Samuelk0nrad/docker-ory.git`
 2. Copy example.env file: `cp example.env .env`
 3. Generate random secrets for Kratos and Hydra: `openssl rand -base64 32`, and add them to the .env file
-4. Run: `docker compose up -d`
+4. Run all services: `docker compose up -d`
 5. Verify setup: `./test-setup.sh`
-6. Start Next.js app: `cd example-next-app && bun install && bun run dev`
+6. Visit: http://localhost:3000
+
+The Next.js application will automatically start as part of the Docker stack and connect to Kratos and Hydra internally.
+
+### Option 2: Hybrid (Development)
+
+Run Ory services in Docker, Next.js locally for faster development:
+
+1. Clone repository: `git clone git@github.com:Samuelk0nrad/docker-ory.git`
+2. Copy example.env file: `cp example.env .env`
+3. Generate random secrets for Kratos and Hydra: `openssl rand -base64 32`, and add them to the .env file
+4. Start Ory services only: `docker compose up -d postgres pgadmin ory-hydra ory-kratos mailslurper`
+5. Verify setup: `./test-setup.sh`
+6. Start Next.js app locally: `cd example-next-app && cp example.env .env && bun install && bun run dev`
 7. Visit: http://localhost:3000
 
 ## Architecture Overview
@@ -93,6 +110,11 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 - **Dev Server**: http://localhost:3000
 - **Framework**: Next.js 15+ (App Router)
 - **UI**: Custom components with shadcn/ui
+- **Docker**: Production-ready multi-stage Dockerfile with Bun runtime
+
+**Deployment Options:**
+1. **Docker (Production)**: Included in `docker-compose.yaml` as `nextjs-app` service
+2. **Local Development**: Run with `bun run dev` for hot-reload
 
 **Authentication Endpoints:**
 - `/auth/login` - Kratos login with optional `return_to` support
