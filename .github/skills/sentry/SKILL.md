@@ -1,6 +1,6 @@
 ---
 name: sentry-examples
-description: These are some templates for sentry, use this if the user asks you to implement sentry, or if you change any sentry related code. Make sure to stick to these examples and make your own research (e.g. web search / context7) if your ask to implement more complexe code not coverd within these examples.
+description: These are some templates for sentry, use this if the user asks you to implement sentry, or if you change any sentry related code. Make sure to stick to these examples and make your own research (e.g. web search / context7) if your ask to implement more complexe code not coverd within these examples. If needed you can use the tools and context available to you via the sentry mcp server
 ---
 
 These examples should be used as guidance when configuring Sentry functionality within a project.
