@@ -1,0 +1,7 @@
+reviews:
+  auto_review:
+    enabled: true
+    base_branches:
+      - integration_branch
+      - test_branch
+
