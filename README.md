@@ -13,6 +13,7 @@ Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos
 - Mailslurper for development email testing
 - [Next.js example](./example-next-app/) implementation with custom UI (shadcn)
 - Automatic OAuth client creation on startup (for development)
+- **Sentry error tracking** - Error monitoring and performance tracking (see [doc/SENTRY.md](./doc/SENTRY.md))
 
 ## Quick Start
 
