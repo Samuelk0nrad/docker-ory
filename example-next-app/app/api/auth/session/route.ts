@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createRemoteJWKSet, decodeJwt, jwtVerify } from "jose";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * OAuth Session Info API Route
@@ -12,12 +13,23 @@ import { createRemoteJWKSet, decodeJwt, jwtVerify } from "jose";
  */
 export async function GET() {
   try {
+    Sentry.addBreadcrumb({
+      category: "session",
+      message: "Session info requested",
+      level: "info",
+    });
+
     const cookieStore = await cookies();
     const idToken = cookieStore.get("oauth_id_token")?.value;
     const tokenMeta = cookieStore.get("oauth_token_meta")?.value;
     const refreshToken = cookieStore.get("oauth_refresh_token")?.value;
 
     if (!idToken) {
+      Sentry.addBreadcrumb({
+        category: "session",
+        message: "No ID token found",
+        level: "info",
+      });
       return NextResponse.json({ user: null });
     }
 
@@ -38,12 +50,35 @@ export async function GET() {
     // Verify JWT signature and decode claims
     let idTokenClaims;
     try {
-      console.debug("[auth/session] Verifying ID token with JWKS:", { jwksUri, issuer: hydraIssuerUrl, decodedToken }, " token id:", idToken.substring(0, 10) + "...");
-      const { payload } = await jwtVerify(idToken, JWKS, {
-        issuer: decodedToken.iss || hydraIssuerUrl, // Verify issuer matches the public-facing Hydra URL
-        // jwtVerify automatically validates exp claim and throws if expired
-      });
-      idTokenClaims = payload;
+      idTokenClaims = await Sentry.startSpan(
+        { op: "auth.verify", name: "Verify ID Token JWT" },
+        async (span) => {
+          Sentry.addBreadcrumb({
+            category: "session",
+            message: "Starting JWT verification",
+            level: "info",
+          });
+
+          span.setAttribute("jwt.has_issuer", !!decodedToken.iss);
+          span.setAttribute("jwt.has_expiry", !!decodedToken.exp);
+
+          console.debug("[auth/session] Verifying ID token with JWKS:", { jwksUri, issuer: hydraIssuerUrl, decodedToken }, " token id:", idToken.substring(0, 10) + "...");
+          const { payload } = await jwtVerify(idToken, JWKS, {
+            issuer: decodedToken.iss || hydraIssuerUrl, // Verify issuer matches the public-facing Hydra URL
+            // jwtVerify automatically validates exp claim and throws if expired
+          });
+
+          span.setAttribute("jwt.verified", true);
+
+          Sentry.addBreadcrumb({
+            category: "session",
+            message: "JWT verification successful",
+            level: "info",
+          });
+
+          return payload;
+        }
+      );
       
       // Additional explicit expiry check for clarity and logging
       if (idTokenClaims.exp) {
@@ -53,11 +88,23 @@ export async function GET() {
             exp: idTokenClaims.exp,
             now: currentTime,
           });
+          Sentry.addBreadcrumb({
+            category: "session",
+            message: "Token expired",
+            level: "warning",
+          });
           throw new Error("Token expired");
         }
       }
     } catch (verifyError) {
       console.error("[auth/session] JWT verification failed:", verifyError);
+      Sentry.captureException(verifyError);
+      
+      Sentry.addBreadcrumb({
+        category: "session",
+        message: "JWT verification failed, clearing tokens",
+        level: "warning",
+      });
       
       // Clear expired/invalid tokens
       cookieStore.set("oauth_id_token", "", { path: "/", maxAge: 0 });
@@ -89,6 +136,13 @@ export async function GET() {
     // Calculate expiration time
     const expiresAt = meta?.expires_at || (idTokenClaims.exp ? idTokenClaims.exp * 1000 : null);
 
+    Sentry.addBreadcrumb({
+      category: "session",
+      message: "Session info retrieved successfully",
+      level: "info",
+      data: { has_refresh_token: !!refreshToken },
+    });
+
     return NextResponse.json({
       user,
       expiresAt,
@@ -96,6 +150,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error("[auth/session] Error:", error);
+    Sentry.captureException(error);
     return NextResponse.json(
       {
         user: null,
