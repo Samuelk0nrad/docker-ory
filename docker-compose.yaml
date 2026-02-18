@@ -62,8 +62,8 @@ services:
     networks:
       - ory-bridge
     ports:
-      - "5444:4444"
-      - "5445:4445"
+      - "5444:4444" # Public API
+      # - "5445:4445" # Admin API
     depends_on:
       ory-hydra-db-migration:
         condition: service_completed_successfully
@@ -110,8 +110,8 @@ services:
       ory-kratos-db-migration:
         condition: service_completed_successfully
     ports:
-      - "5544:4434"
-      - "5545:4433"
+      - "5544:4434" # Public API
+      #- "5545:4433" # Admin API
     networks:
       - ory-bridge
     environment:
@@ -128,25 +128,25 @@ services:
   mailslurper:
     image: oryd/mailslurper:smtps-latest
     ports:
-      - "4436:4436"
-      - "4437:4437"
-      - "4438:1025"
+      - "4436:4436" # Web UI
+      - "4437:4437" # SMTP
+      - "4438:1025" # SMTPS
     networks:
       - ory-bridge
 
-  ##################
-  ## Next.js App  ##
-  ##################
+  #################
+  ## Next.js App ##
+  #################
   nextjs-app:
     image: oven/bun:1.2.1-alpine
     container_name: nextjs-app
     working_dir: /app
-    command: sh -c "bun install && bun run dev"
+    command: sh -c "bun install && bun run dev -p 80"
     restart: unless-stopped
     networks:
       - ory-bridge
-    ports:
-      - "3000:3000"
+    # ports:
+    #- "3000:80" # Map Next.js app to port 3000 on the host
     depends_on:
       - ory-kratos
       - ory-hydra
@@ -158,6 +158,25 @@ services:
     volumes:
       - ./example-next-app:/app
       - nextjs-node-modules:/app/node_modules
+
+  #################
+  ####  Proxy  ####
+  #################
+  proxy:
+    image: nginx:latest
+    networks:
+      - ory-bridge
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./proxy-config/default.conf:/etc/nginx/conf.d/default.conf
+      - ./proxy-config/cert:/certs:ro
+      - ./proxy-config/not-found.html:/var/www/html/not-found.html:ro
+    depends_on:
+      - nextjs-app
+      - ory-hydra
+      - ory-kratos
 
 volumes:
   pgadmin-data:

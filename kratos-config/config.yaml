@@ -68,7 +68,6 @@ selfservice:
               - email
               - profile
 
-
 ##       config:
 ##         base_redirect_uri: https://auth.myexample.org/
 ##         providers:
