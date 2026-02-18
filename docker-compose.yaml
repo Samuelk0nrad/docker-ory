@@ -73,7 +73,6 @@ services:
     volumes:
       - ./hydra-config:/etc/config/hydra
 
-
   ory-hydra-setup:
     image: curlimages/curl:8.5.0
     depends_on:
@@ -85,7 +84,6 @@ services:
     command: /etc/config/hydra/setup.sh
     volumes:
       - ./hydra-setup:/etc/config/hydra
-
 
   ##################
   ####  kratos  ####
@@ -140,10 +138,10 @@ services:
   ## Next.js App  ##
   ##################
   nextjs-app:
-    build:
-      context: ./example-next-app
-      dockerfile: Dockerfile
+    image: oven/bun:1.2.1-alpine
     container_name: nextjs-app
+    working_dir: /app
+    command: sh -c "bun install && bun run dev"
     restart: unless-stopped
     networks:
       - ory-bridge
@@ -154,36 +152,18 @@ services:
       - ory-hydra
       - mailslurper
     environment:
-      # App Configuration
-      NEXT_PUBLIC_APP_DOMAIN: http://localhost:3000
-      
-      # Kratos URLs (container-to-container and public)
-      KRATOS_PUBLIC_BASE_URL: http://kratos:4433
-      NEXT_PUBLIC_KRATOS_PUBLIC_URL: http://localhost:3000/api/.ory/kratos
-      
-      # Hydra URLs (container-to-container and public)
-      HYDRA_PUBLIC_BASE_URL: http://hydra:4444
-      HYDRA_ADMIN_URL: http://hydra:4445
-      NEXT_PUBLIC_HYDRA_PUBLIC_URL: http://localhost:3000/api/.ory/hydra
-      
-      # OAuth2 Client Configuration
-      NEXT_PUBLIC_OAUTH_CLIENT_ID: frontend-app
-      OAUTH_CLIENT_ID: frontend-app
-      OAUTH_CLIENT_SECRET: dev-secret
-      
-      # Sentry Configuration (optional)
-      NEXT_PUBLIC_SENTRY_DSN: ${SENTRY_DSN:-}
-      SENTRY_ORG: ${SENTRY_ORG:-}
-      SENTRY_PROJECT: ${SENTRY_PROJECT:-}
-      SENTRY_AUTH_TOKEN: ${SENTRY_AUTH_TOKEN:-}
-      
+      NODE_ENV: development
       # Disable Next.js telemetry
       NEXT_TELEMETRY_DISABLED: 1
+    volumes:
+      - ./example-next-app:/app
+      - nextjs-node-modules:/app/node_modules
 
 volumes:
   pgadmin-data:
   hydra-data:
   kratos_data:
+  nextjs-node-modules:
 
 networks:
   ory-bridge:
