@@ -286,14 +286,16 @@ export async function GET(req: NextRequest) {
 
     console.log(
       '[oauth callback] Login successful, redirecting to:',
-      safeRedirect
+      safeRedirect,
+      'request URL:',
+      req.url
     );
     Sentry.addBreadcrumb({
       category: 'oauth',
       message: 'OAuth callback completed successfully',
       level: 'info',
     });
-    return NextResponse.redirect(new URL(safeRedirect, req.url));
+    return NextResponse.redirect(new URL(safeRedirect, appUrl));
   } catch (error) {
     console.error('[oauth callback] Error:', error);
     Sentry.captureException(error);
