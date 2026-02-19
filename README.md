@@ -94,7 +94,7 @@ docker compose logs nextjs-app -f
 you should now be able to access the application at https://auth.moorph.local
 
 ### Option 2: Hybrid (Development)
-(this is autochenerated and I'm not shure if it works! (same with the whole other readme, expect the first option :) ))
+(this is ai generated and I'm not shure if it works! (same with the whole other readme, expect the first option :) ))
 
 Run Ory services in Docker, Next.js locally for faster development:
 
