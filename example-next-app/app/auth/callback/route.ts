@@ -99,7 +99,8 @@ export async function GET(req: NextRequest) {
     const clientSecret = process.env.OAUTH_CLIENT_SECRET ?? 'dev-secret';
     const hydraPublicUrl =
       process.env.HYDRA_PUBLIC_BASE_URL ?? 'http://localhost:5444';
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? 'http://localhost:3000';
+    const appUrl =
+      process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'http://localhost:3000';
     const redirectUri = `${appUrl}/auth/callback`;
 
     // Exchange authorization code for tokens

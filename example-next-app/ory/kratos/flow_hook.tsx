@@ -233,17 +233,17 @@ export function useAuthFlow<
       if (c.action === 'show_recovery_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/recovery?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/recovery?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_settings_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/settings?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/settings?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_verification_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/verification?flow=${c.flow.id}`;
         return;
       }
     }

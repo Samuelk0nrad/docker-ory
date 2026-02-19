@@ -112,7 +112,6 @@ export async function POST() {
           process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ??
           'http://localhost:5444';
         const appUrl =
-          process.env.NEXT_PUBLIC_APP_URL ??
           process.env.NEXT_PUBLIC_APP_DOMAIN ??
           'http://localhost:3000';
         const logoutUrl = `${hydraPublicUrl}/oauth2/sessions/logout?return_to=${encodeURIComponent(

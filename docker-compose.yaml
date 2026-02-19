@@ -151,6 +151,8 @@ services:
       - ory-kratos
       - ory-hydra
       - mailslurper
+    env_file:
+      - ./example-next-app/.env
     environment:
       NODE_ENV: development
       # Disable Next.js telemetry

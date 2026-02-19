@@ -1,4 +1,4 @@
-import { kratos } from '@/ory/kratos/kratos';
+import { kratosServer } from '@/ory/kratos/kratos.server';
 import * as Sentry from '@sentry/nextjs';
 import { cookies } from 'next/headers';
 import { redirect, unstable_rethrow } from 'next/navigation';
@@ -116,10 +116,14 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
 
     let ok = false;
     try {
-      const { data } = await kratos.toSession({ cookie: cookieHeader });
+      const { data } = await kratosServer.toSession({ cookie: cookieHeader });
       kratosSession = data;
       ok = true;
-    } catch {
+    } catch (error) {
+      console.log(
+        '[hydra/login page] no valid Kratos session found, error:',
+        error
+      );
       ok = false;
     }
 
@@ -131,6 +135,15 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
         has_session: ok,
       },
     });
+
+    console.log(
+      '[hydra/login page] Kratos session check, has session:',
+      ok,
+      'session data:',
+      kratosSession,
+      'cookie header:',
+      cookieHeader
+    );
 
     if (!ok || !kratosSession?.identity) {
       // No session → redirect to Kratos login with return_to
