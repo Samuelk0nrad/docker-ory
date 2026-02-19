@@ -11,37 +11,37 @@ identity:
 
 serve:
   public:
-    base_url: http://localhost:5545
+    base_url: https://auth.moorph.local/api/.ory/kratos
   admin:
     base_url: http://kratos:4434
 
 selfservice:
-  default_browser_return_url: http://localhost:3000
+  default_browser_return_url: https://auth.moorph.local
   allowed_return_urls:
-    - http://localhost:3000/
-    - http://localhost:3000/auth/hydra/
+    - https://auth.moorph.local/
+    - https://auth.moorph.local/auth/hydra/
 
   flows:
     login:
-      ui_url: http://localhost:3000/auth/login
+      ui_url: https://auth.moorph.local/auth/login
     registration:
-      ui_url: http://localhost:3000/auth/registration
+      ui_url: https://auth.moorph.local/auth/registration
       after:
         password:
           hooks:
             - hook: show_verification_ui
             - hook: session
     settings:
-      ui_url: http://localhost:3000/settings
+      ui_url: https://auth.moorph.local/settings
     recovery:
       enabled: true
-      ui_url: http://localhost:3000/auth/recovery
+      ui_url: https://auth.moorph.local/auth/recovery
       after:
         hooks:
           - hook: revoke_active_sessions
     verification:
       enabled: true
-      ui_url: http://localhost:3000/auth/verification
+      ui_url: https://auth.moorph.local/auth/verification
 
   methods:
     password:
@@ -53,7 +53,7 @@ selfservice:
     oidc:
       enabled: true
       config:
-        base_redirect_uri: http://localhost:5545/
+        base_redirect_uri: https://auth.moorph.local/api/.ory/kratos/
         providers:
           - id: google
             provider: google

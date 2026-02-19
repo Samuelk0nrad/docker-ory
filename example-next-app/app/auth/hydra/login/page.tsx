@@ -1,8 +1,7 @@
-import { kratos } from "@/ory/kratos/kratos";
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
-import { unstable_rethrow } from "next/navigation";
-import * as Sentry from "@sentry/nextjs";
+import { kratos } from '@/ory/kratos/kratos';
+import * as Sentry from '@sentry/nextjs';
+import { cookies } from 'next/headers';
+import { redirect, unstable_rethrow } from 'next/navigation';
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -45,22 +44,34 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     });
 
     // 1. Fetch the Hydra login request
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const loginReqUrl = new URL(`${baseUrl}/api/hydra/login`);
-    loginReqUrl.searchParams.set("login_challenge", login_challenge);
+    const loginReqUrl = new URL(`/api/hydra/login`);
+    loginReqUrl.searchParams.set('login_challenge', login_challenge);
+    console.log(
+      '[hydra/login page] fetching login request, baseurl:',
+      loginReqUrl.toString()
+    );
 
     const loginReqRes = await fetch(loginReqUrl.toString());
+    console.log(
+      '[hydra/login page] received response for login request, status:',
+      loginReqRes
+    );
     if (!loginReqRes.ok) {
+      console.log(
+        '[hydra/login page] failed to fetch login request, status:',
+        loginReqRes.status
+      );
       throw new Error(
         `Failed to fetch login request: ${loginReqRes.statusText}`
       );
     }
 
-
     const loginRequest = await loginReqRes.json();
 
-    console.log("[hydra/login page] fetched login request successfully, data:", loginRequest);
+    console.log(
+      '[hydra/login page] fetched login request successfully, data:',
+      loginRequest
+    );
 
     Sentry.addBreadcrumb({
       category: 'oauth.hydra',
@@ -80,9 +91,9 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
         level: 'info',
       });
 
-      const acceptRes = await fetch(`${baseUrl}/api/hydra/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const acceptRes = await fetch(`/api/hydra/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           login_challenge,
           subject: loginRequest.subject,
@@ -102,7 +113,7 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     const cookieHeader = cookieStore
       .getAll()
       .map((c) => `${c.name}=${c.value}`)
-      .join("; ");
+      .join('; ');
 
     let kratosSession;
 
@@ -139,12 +150,12 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     // 4. Accept login with the Kratos identity.id as subject
     const subject = kratosSession.identity?.id;
     if (!subject) {
-      throw new Error("Kratos session exists but has no identity.id");
+      throw new Error('Kratos session exists but has no identity.id');
     }
 
-    const acceptRes = await fetch(`${baseUrl}/api/hydra/login`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
+    const acceptRes = await fetch(`/api/hydra/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login_challenge, subject }),
     });
 
@@ -158,16 +169,14 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     // Re-throw Next.js internal errors (like redirect) so they are handled by the framework
     unstable_rethrow(error);
 
-    console.error("[hydra/login page] error:", error);
+    console.error('[hydra/login page] error:', error);
     Sentry.captureException(error);
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">
-            Login Flow Error
-          </h1>
+          <h1 className="text-2xl font-bold text-red-600">Login Flow Error</h1>
           <p className="mt-2 text-sm text-gray-600">
-            {error instanceof Error ? error.message : "An error occurred"}
+            {error instanceof Error ? error.message : 'An error occurred'}
           </p>
         </div>
       </div>

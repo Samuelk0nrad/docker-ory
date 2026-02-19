@@ -69,9 +69,11 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 ### [ORY Hydra](https://www.ory.com/hydra) - OAuth 2.0 & OpenID Connect
 
 - **Version**: v2.2.0+
-- **Public API**: http://localhost:5444
+- **Public API (via proxy)**: https://auth.moorph.local/api/.ory/hydra
+- **Public API (direct host port)**: http://localhost:5444
 - **Admin API**: http://localhost:5445
-- **OpenID Configuration**: http://localhost:5444/.well-known/openid-configuration
+- **OpenID Configuration (via proxy)**: https://auth.moorph.local/api/.ory/hydra/.well-known/openid-configuration
+- **OpenID Configuration (direct host port)**: http://localhost:5444/.well-known/openid-configuration
 
 **Pre-configured OAuth Client:**
 - Client ID: `frontend-app`
@@ -93,7 +95,8 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 
 ### [ORY Kratos](https://www.ory.com/kratos) - Identity Management
 
-- **Public API**: http://localhost:5545
+- **Public API (via proxy)**: https://auth.moorph.local/api/.ory/kratos
+- **Public API (direct host port)**: http://localhost:5545
 - **Admin API**: http://localhost:5544
 - Config file: [config.yaml](./kratos-config/config.yaml)
 - Identity schema: [identity.schema.json](./kratos-config/identity.schema.json)

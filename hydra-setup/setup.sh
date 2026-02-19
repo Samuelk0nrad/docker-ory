@@ -37,7 +37,12 @@ RESPONSE=$(curl -s -w "\n%{http_code}" -X POST "$HYDRA_ADMIN/admin/clients" \
     "grant_types": ["authorization_code", "refresh_token"],
     "response_types": ["code"],
     "scope": "openid profile email offline",
-    "redirect_uris": ["http://localhost:3000/callback", "http://localhost:3000/auth/callback"],
+    "redirect_uris": [
+      "http://localhost:3000/callback", 
+      "http://localhost:3000/auth/callback", 
+      "https://auth.moorph.local/callback", 
+      "https://auth.moorph.local/auth/callback"
+    ],
     "token_endpoint_auth_method": "client_secret_basic",
     "skip_consent": true,
     "skip_logout_consent": true
