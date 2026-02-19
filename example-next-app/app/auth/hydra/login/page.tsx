@@ -44,7 +44,8 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     });
 
     // 1. Fetch the Hydra login request
-    const loginReqUrl = new URL(`/api/hydra/login`);
+    const baseUrl = process.env.NEXT_INTERNAL_URL ?? 'http://localhost:3000';
+    const loginReqUrl = new URL(`${baseUrl}/api/hydra/login`);
     loginReqUrl.searchParams.set('login_challenge', login_challenge);
     console.log(
       '[hydra/login page] fetching login request, baseurl:',
@@ -52,10 +53,6 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     );
 
     const loginReqRes = await fetch(loginReqUrl.toString());
-    console.log(
-      '[hydra/login page] received response for login request, status:',
-      loginReqRes
-    );
     if (!loginReqRes.ok) {
       console.log(
         '[hydra/login page] failed to fetch login request, status:',
@@ -91,7 +88,7 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
         level: 'info',
       });
 
-      const acceptRes = await fetch(`/api/hydra/login`, {
+      const acceptRes = await fetch(`${baseUrl}/api/hydra/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -153,7 +150,7 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
       throw new Error('Kratos session exists but has no identity.id');
     }
 
-    const acceptRes = await fetch(`/api/hydra/login`, {
+    const acceptRes = await fetch(`${baseUrl}/api/hydra/login`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ login_challenge, subject }),

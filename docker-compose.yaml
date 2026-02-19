@@ -110,8 +110,8 @@ services:
       ory-kratos-db-migration:
         condition: service_completed_successfully
     ports:
-      - "5544:4434" # Public API
-      #- "5545:4433" # Admin API
+      # - "5544:4434" # Admin API
+      - "5545:4433" # Public API
     networks:
       - ory-bridge
     environment:
