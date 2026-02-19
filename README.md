@@ -40,7 +40,7 @@ openssl rand -base64 32
 
 **`on linux/Mac:`**
 
-Add at the end of your /etc/hosts file the following line:
+Add at the end of your /etc/hosts file the following line (Tip: Open the file with sudo):
 ```txt
 127.0.0.1 auth.moorph.local
 ```
