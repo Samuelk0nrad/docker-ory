@@ -21,16 +21,80 @@ Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos
 
 Run everything including the Next.js app in Docker:
 
-1. Clone repository: `git clone git@github.com:Samuelk0nrad/docker-ory.git`
-2. Copy example.env file: `cp example.env .env`
-3. Generate random secrets for Kratos and Hydra: `openssl rand -base64 32`, and add them to the .env file
-4. Run all services: `docker compose up -d`
-5. Verify setup: `./test-setup.sh`
-6. Visit: http://localhost:3000
+#### Step 1: Clone the repository
 
-The Next.js application will automatically start as part of the Docker stack and connect to Kratos and Hydra internally.
+```sh
+git clone git@github.com:Samuelk0nrad/docker-ory.git
+```
+
+#### Step 2: Set up your environment for the containers
+
+- First copy the `example.env` file to `.env`
+- Second, you have to create secrets for Kratos and Hydra, to do so run this command twice:
+
+```sh
+openssl rand -base64 32
+```
+
+#### Step 3: Add your domain (`auth.moorph.local`) to your hosts file
+
+**`on linux/Mac:`**
+
+Add at the end of your /etc/hosts file the following line:
+```txt
+127.0.0.1 auth.moorph.local
+```
+
+This will let you access the whole application via `auth.moorph.local`
+
+**`on Windown`**
+
+Use ~Google~ / ChatGPT / OpenClaw / ...
+
+#### Step 4: Add TLS certificate for `auth.moorph.local`
+
+The reverse proxy looks at the `proxy-config/cert` for the TLS certificate and the key so create them there!
+
+**`on linux`**:
+if not already:
+1. Install mkcert
+2. Install the local CA:
+   ```sh
+   mkcert -install
+   ```
+
+Then create the certificates inside the `proxy-config/cert` folder:
+```sh
+mkcert auth.moorph.local
+```
+
+**Thats it!** (for this step)
+
+for more details look at [cert readme](./proxy-config/cert/README.md)
+
+#### Step 5: Set up your nextjs environment
+
+- Copy the `example.env` file inside the `example-next-app` to `.env`
+- If you followed the previous steps you just have to set up the sentry variables
+
+#### Step 6: Run the whole auth stack!
+
+Just run the docker compose container:
+```sh
+docker compose up -d
+```
+
+To see the logs from the nextjs application you can run:
+```bash
+docker compose logs nextjs-app -f
+```
+
+(same with all the other services)
+
+you should now be able to access the application at https://auth.moorph.local
 
 ### Option 2: Hybrid (Development)
+(this is autochenerated and I'm not shure if it works! (same with the whole other readme, expect the first option :) ))
 
 Run Ory services in Docker, Next.js locally for faster development:
 
