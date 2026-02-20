@@ -10,25 +10,33 @@ export function middleware() {
   // Clone the response to add headers
   const response = NextResponse.next();
 
+  // Check if we're in development mode
+  const isDevelopment = process.env.NODE_ENV === "development";
+
   // Content Security Policy (CSP)
   // Restricts sources for scripts, styles, and other resources
+  const connectSrcUrls = isDevelopment 
+    ? "'self' http://localhost:* http://127.0.0.1:* https://auth.moorph.local"
+    : "'self' https://auth.moorph.local";
+
   const cspDirectives = [
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline/eval needed for Next.js
     "style-src 'self' 'unsafe-inline'", // unsafe-inline needed for styled-components/CSS-in-JS
     "img-src 'self' data: https:",
     "font-src 'self' data:",
-    "connect-src 'self' http://localhost:* http://127.0.0.1:*", // Allow local API calls
-    "frame-ancestors 'none'", // Equivalent to X-Frame-Options: DENY
+    `connect-src ${connectSrcUrls}`, // Allow API calls to auth domain
+    "frame-ancestors 'self' https://auth.moorph.local", // Allow OAuth iframes from same domain
     "base-uri 'self'",
     "form-action 'self'",
-    "upgrade-insecure-requests", // Upgrade HTTP to HTTPS in production
-  ].join("; ");
+    isDevelopment ? "" : "upgrade-insecure-requests", // Upgrade HTTP to HTTPS in production
+  ].filter(Boolean).join("; ");
   
   response.headers.set("Content-Security-Policy", cspDirectives);
 
-  // X-Frame-Options: Prevents clickjacking attacks
-  response.headers.set("X-Frame-Options", "DENY");
+  // X-Frame-Options: Changed to SAMEORIGIN to allow OAuth iframes
+  // (was DENY which could break OAuth flows)
+  response.headers.set("X-Frame-Options", "SAMEORIGIN");
 
   // X-Content-Type-Options: Prevents MIME-sniffing
   response.headers.set("X-Content-Type-Options", "nosniff");

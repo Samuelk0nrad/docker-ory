@@ -99,12 +99,13 @@ you should now be able to access the application at https://auth.moorph.local
 Run Ory services in Docker, Next.js locally for faster development:
 
 1. Clone repository: `git clone git@github.com:Samuelk0nrad/docker-ory.git`
-2. Copy example.env file: `cp example.env .env`
-3. Generate random secrets for Kratos and Hydra: `openssl rand -base64 32`, and add them to the .env file
-4. Start Ory services only: `docker compose up -d postgres pgadmin ory-hydra ory-kratos mailslurper`
-5. Verify setup: `./test-setup.sh`
-6. Start Next.js app locally: `cd example-next-app && cp example.env .env && bun install && bun run dev`
-7. Visit: http://localhost:3000
+2. Follow Steps 2-4 from Option 1 to set up environment, hosts file, and TLS certificates
+3. Start Ory services only: `docker compose up -d postgres pgadmin ory-hydra ory-kratos mailslurper proxy`
+4. Verify setup: `./test-setup.sh`
+5. Start Next.js app locally: `cd example-next-app && cp example.env .env && bun install && bun run dev`
+6. Visit: https://auth.moorph.local (proxy forwards to your local Next.js dev server)
+
+**Note:** This mode requires the nginx proxy to be running to handle SSL/TLS termination and routing.
 
 ## Architecture Overview
 
@@ -146,8 +147,8 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 - Response Types: `code`
 - Scopes: `openid`, `profile`, `email`, `offline`
 - Redirect URIs:
-  - http://localhost:3000/callback
-  - http://localhost:3000/auth/callback
+  - https://auth.moorph.local/callback
+  - https://auth.moorph.local/auth/callback
 - **Skip Consent**: `true` (auto-accept consent for first-party client)
 
 **Integration Features:**
@@ -170,14 +171,15 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 - Email verification & recovery
 - OIDC providers (Google configured as example, but can be extended)
 - **OAuth2 return URL support** for Hydra integration
-- Allowed return URLs: `http://localhost:3000/auth/hydra/*`
+- Allowed return URLs: `https://auth.moorph.local/auth/hydra/*`
 
 ### Next.js Application
 
-- **Dev Server**: http://localhost:3000
+- **Public URL (via proxy)**: https://auth.moorph.local
+- **Container Port**: 80 (internal)
 - **Framework**: Next.js 15+ (App Router)
 - **UI**: Custom components with shadcn/ui
-- **Docker**: Production-ready multi-stage Dockerfile with Bun runtime
+- **Runtime**: Bun 1.2.1 (Alpine-based container)
 
 **Deployment Options:**
 1. **Docker (Production)**: Included in `docker-compose.yaml` as `nextjs-app` service
@@ -266,3 +268,12 @@ Required environment variables (see [example.env](./example.env)):
 - `KRATOS_DSN` - Database connection string for Kratos
 - `GOOGLE_OAUTH2_CLIENT_ID` - Google OAuth client ID (optional)
 - `GOOGLE_OAUTH2_CLIENT_SECRET` - Google OAuth client secret (optional)
+
+
+## Things that I want to add in the future / I'm working on:
+
+- [ ] fix issue if clicking login -> registrate, it doesn't redirect to the hydra oauth flow, and a nother click on login is required
+
+---
+- [ ] fix test setup
+- [ ] add health checks to containers for testing

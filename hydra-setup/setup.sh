@@ -1,6 +1,11 @@
 #!/bin/sh
 set -e
 
+# WARNING: This script uses development secrets that MUST be changed before production deployment!
+# - client_secret "dev-secret" is hardcoded for development only
+# - In production, generate a strong random secret: openssl rand -base64 32
+# - Update the secret in your OAuth client configuration
+
 HYDRA_ADMIN=http://hydra:4445
 
 echo "Waiting for Hydra to be ready..."

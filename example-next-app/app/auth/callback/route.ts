@@ -11,6 +11,15 @@ import { NextRequest, NextResponse } from 'next/server';
  * GET /auth/callback?code=...&state=...
  */
 export async function GET(req: NextRequest) {
+
+  console.log('[oauth callback] Received callback request:', {
+    url: req.url,
+    searchParams: Object.fromEntries(req.nextUrl.searchParams.entries()),
+  });
+  
+  const appUrl =
+    process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'http://localhost:3000';
+
   const code = req.nextUrl.searchParams.get('code');
   const state = req.nextUrl.searchParams.get('state');
   const error = req.nextUrl.searchParams.get('error');
@@ -51,7 +60,7 @@ export async function GET(req: NextRequest) {
         `/auth/login?error=invalid_state&error_description=${encodeURIComponent(
           'Invalid or missing OAuth state'
         )}`,
-        req.url
+        appUrl
       )
     );
   }
@@ -68,7 +77,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.redirect(
       new URL(
         `/auth/login?error=${encodeURIComponent(error)}&error_description=${encodeURIComponent(errorDescription ?? '')}`,
-        req.url
+        appUrl
       )
     );
   }
@@ -99,8 +108,6 @@ export async function GET(req: NextRequest) {
     const clientSecret = process.env.OAUTH_CLIENT_SECRET ?? 'dev-secret';
     const hydraPublicUrl =
       process.env.HYDRA_PUBLIC_BASE_URL ?? 'http://localhost:5444';
-    const appUrl =
-      process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'http://localhost:3000';
     const redirectUri = `${appUrl}/auth/callback`;
 
     // Exchange authorization code for tokens
@@ -284,11 +291,12 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const redierectURL = new URL(safeRedirect, appUrl);
     console.log(
       '[oauth callback] Login successful, redirecting to:',
       safeRedirect,
-      'request URL:',
-      req.url
+      'redirect URL:',
+      redierectURL.toString()
     );
     Sentry.addBreadcrumb({
       category: 'oauth',
@@ -304,7 +312,7 @@ export async function GET(req: NextRequest) {
         `/auth/login?error=callback_failed&error_description=${encodeURIComponent(
           error instanceof Error ? error.message : 'Token exchange failed'
         )}`,
-        req.url
+        appUrl
       )
     );
   }

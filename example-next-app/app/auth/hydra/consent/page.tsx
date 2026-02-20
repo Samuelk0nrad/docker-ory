@@ -151,11 +151,14 @@ export default async function HydraConsentPage({
       throw new Error(`Failed to accept consent: ${acceptRes.statusText}`);
     }
 
+    
+    const acceptResData = await acceptRes.json();
+    const { redirect_to } = acceptResData;
     console.log(
-      '[hydra/consent page] consent accepted successfully, redirecting'
+      '[hydra/consent page] consent accepted successfully, redirecting',
+      "accept response data:",
+      acceptResData
     );
-
-    const { redirect_to } = await acceptRes.json();
     console.log('[hydra/consent page] redirecting to:', redirect_to);
     redirect(redirect_to);
   } catch (error) {
