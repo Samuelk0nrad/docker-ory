@@ -1,19 +1,16 @@
-# ORY Starter
+# OAuth provider (ORY) Starter
 
-Starter Template for the ORY Stack, with [ORY Kratos](https://www.ory.com/kratos) and [ORY Hydra](https://www.ory.com/hydra) set up with docker locally.
+Full Stack OAuth provider (like google auth or github auth and so on) with [ORY Kratos](https://www.ory.com/kratos) and [ORY Hydra](https://www.ory.com/hydra) (enterprice software!)
+
+Use this for a centerd user management throughout multiple applications
 
 ## Key Implementations
 
-- PostgreSQL database with automatic setup
-- [ORY Kratos](https://www.ory.com/kratos) - Identity and user management
-- [ORY Hydra](https://www.ory.com/hydra) v2.2+ - OAuth 2.0 and OpenID Connect provider
-- **Full OAuth2/OIDC integration** - Hydra delegates authentication to Kratos, then issues JWTs
-- **Backend-for-Frontend (BFF) pattern** - Tokens stored in httpOnly cookies, never exposed to browser
-- **Automatic consent flow** - First-party OAuth client with skip_consent enabled
-- Mailslurper for development email testing
+- **Full OAuth2/OIDC integration**
 - [Next.js example](./example-next-app/) implementation with custom UI (shadcn)
-- Automatic OAuth client creation on startup (for development)
-- **Sentry error tracking** - Error monitoring and performance tracking (see [doc/SENTRY.md](./doc/SENTRY.md))
+- [ORY Kratos](https://www.ory.com/kratos) - Identity and user management
+- [ORY Hydra](https://www.ory.com/hydra) - OAuth 2.0 and OpenID Connect provider
+- **Sentry error tracking** - Error monitoring and performance tracking
 
 ## Quick Start
 
@@ -37,6 +34,8 @@ openssl rand -base64 32
 ```
 
 #### Step 3: Add your domain (`auth.moorph.local`) to your hosts file
+
+feel free to use a other domain, but make sure to update all the env's (and maybe other places throughout the repo)
 
 **`on linux/Mac:`**
 
@@ -109,6 +108,15 @@ Run Ory services in Docker, Next.js locally for faster development:
 
 ## Architecture Overview
 
+### Folderstruckture:
+
+- `/doc`: some docs snippits (do not rely on them)
+- `example-next-app`: the frontend for the whole setup (I will change the name of the folder someday)
+- `hydra-config`: the config of hydra and related stuff
+- `kratos-config`: the config of kratos and the identity schema and other related stuff
+- `prostgres-db`: the postgres image with autocreated databases for hydra and kratos
+- `proxy-config`: the nginx config and TLS certificates
+
 ### OAuth2/OIDC Flow
 
 This setup implements a complete OAuth2/OIDC authentication flow where:
@@ -119,15 +127,7 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
    - OAuth2 client (initiates OAuth flows)
    - Backend-for-Frontend (BFF) - securely manages tokens
 
-**Flow sequence:**
-1. User initiates OAuth2 flow → PKCE `code_challenge` generated → redirected to Hydra
-2. Hydra delegates login to Kratos (transparent to user)
-3. User authenticates via Kratos (username/password, OIDC providers, etc.)
-4. Kratos returns to Hydra with authenticated subject
-5. Hydra issues consent (auto-skipped for first-party client)
-6. Authorization code exchanged for tokens with PKCE `code_verifier` (server-side)
-7. Tokens stored in httpOnly cookies (never exposed to browser)
-8. User authenticated with JWT claims available client-side
+how to full sequence looks like, check out the sequence diagram at [OAuth Flow](./example-next-app/docs/oauthFlowSequenceDiagram.mmd)
 
 ## Services & Endpoints
 
@@ -136,11 +136,12 @@ This setup implements a complete OAuth2/OIDC authentication flow where:
 - **Version**: v2.2.0+
 - **Public API (via proxy)**: https://auth.moorph.local/api/.ory/hydra
 - **Public API (direct host port)**: http://localhost:5444
-- **Admin API**: http://localhost:5445
+- **Admin API**: http://localhost:5445 (not forwarted for security)
 - **OpenID Configuration (via proxy)**: https://auth.moorph.local/api/.ory/hydra/.well-known/openid-configuration
 - **OpenID Configuration (direct host port)**: http://localhost:5444/.well-known/openid-configuration
 
 **Pre-configured OAuth Client:**
+(put please don't use this for production)
 - Client ID: `frontend-app`
 - Client Secret: `dev-secret` (server-side only, never exposed)
 - Grant Types: `authorization_code`, `refresh_token`
