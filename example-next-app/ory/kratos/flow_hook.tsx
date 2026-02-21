@@ -6,6 +6,7 @@ import {
 } from '@ory/client';
 import { AxiosError } from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import * as Sentry from '@sentry/nextjs';
 import { SelfServiceFlow } from './flow/SelfServiceFlow';
 import { FlowMap } from './flow/types/FlowMap';
 import { FlowTypeEnum } from './flow/types/FlowTypes';
@@ -93,6 +94,16 @@ export function useAuthFlow<
     let res = true;
     try {
       setIsLoading(true);
+      Sentry.addBreadcrumb({
+        category: 'kratos.flow',
+        message: `Starting ${flowType} flow`,
+        level: 'info',
+        data: {
+          flow_type: flowType,
+          has_flow_id: !!flowId,
+        },
+      });
+
       if (flowId) {
         await flow.getFlow(flowId);
       } else {
@@ -100,7 +111,19 @@ export function useAuthFlow<
       }
       setCsrfToken();
       handleResponse(flow.flow as unknown as GenericFlowResponse);
+
+      Sentry.addBreadcrumb({
+        category: 'kratos.flow',
+        message: `Flow ${flowType} started successfully`,
+        level: 'info',
+      });
     } catch (error) {
+      Sentry.addBreadcrumb({
+        category: 'kratos.flow',
+        message: `Flow ${flowType} start failed`,
+        level: 'error',
+      });
+
       const isAxiosError = error instanceof AxiosError;
       const responseData = isAxiosError
         ? (error.response?.data as GenericFlowResponse)
@@ -119,6 +142,7 @@ export function useAuthFlow<
           text: errorMessage,
           type: 'error',
         });
+        Sentry.captureException(error);
       }
       res = false;
     } finally {
@@ -155,16 +179,37 @@ export function useAuthFlow<
     setIsLoading(true);
     let res = true;
     try {
+      Sentry.addBreadcrumb({
+        category: 'kratos.flow',
+        message: `Updating ${flowType} flow`,
+        level: 'info',
+        data: {
+          flow_type: flowType,
+        },
+      });
+
       if (flow) {
         const result = await flow.updateFlow(
           (rdata ?? data) as unknown as UpdateFlowBodyMap[T]
         );
 
         handleResponse(result.data as unknown as GenericFlowResponse);
+
+        Sentry.addBreadcrumb({
+          category: 'kratos.flow',
+          message: `Flow ${flowType} updated successfully`,
+          level: 'info',
+        });
       } else {
         throw new Error('Flow not initialized');
       }
     } catch (error) {
+      Sentry.addBreadcrumb({
+        category: 'kratos.flow',
+        message: `Flow ${flowType} update failed`,
+        level: 'error',
+      });
+
       if (error instanceof AxiosError && error.response?.data) {
         handleResponse(error.response?.data as GenericFlowResponse);
       } else {
@@ -172,6 +217,7 @@ export function useAuthFlow<
           text: 'An unexpected error occurred during update',
           type: 'error',
         });
+        Sentry.captureException(error);
       }
       res = false;
     } finally {
@@ -187,17 +233,17 @@ export function useAuthFlow<
       if (c.action === 'show_recovery_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/recovery?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/recovery?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_settings_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/settings?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/settings?flow=${c.flow.id}`;
         return;
       } else if (c.action === 'show_verification_ui') {
         window.location.href =
           c.flow.url ??
-          `${process.env.NEXT_PUBLIC_APP_URL}/auth/verification?flow=${c.flow.id}`;
+          `${process.env.NEXT_PUBLIC_APP_DOMAIN}/auth/verification?flow=${c.flow.id}`;
         return;
       }
     }

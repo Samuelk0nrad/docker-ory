@@ -11,29 +11,45 @@ This is a [Next.js](https://nextjs.org) project demonstrating OAuth2/OIDC authen
 
 ### Prerequisites
 
-- Docker and Docker Compose
-- Node.js 20+ (or Bun)
-- Environment variables configured (see `example.env`)
+- Docker and Docker Compose (for Ory services or full stack)
+- Node.js 20+ or Bun (for local development only)
+- Environment variables configured (see `example.env` or `.env.docker`)
 
-### Development Server
+### Option 1: Docker (Full Stack - Recommended)
 
-First, start the Ory services (Hydra, Kratos, Postgres):
+Run everything including the Next.js app in Docker:
 
 ```bash
 # From the root directory
 docker compose up -d
+
+# The application will be available at http://localhost:3000
 ```
 
-Wait for services to be ready, then start the Next.js development server:
+The Next.js application runs as the `nextjs-app` service and automatically connects to Ory services.
+
+**To rebuild after code changes:**
+```bash
+docker compose up -d --build nextjs-app
+```
+
+**To view logs:**
+```bash
+docker compose logs -f nextjs-app
+```
+
+### Option 2: Local Development (Hybrid)
+
+Run Ory services in Docker, Next.js locally for faster development with hot-reload:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# From the root directory - start Ory services only
+docker compose up -d postgres pgadmin ory-hydra ory-kratos mailslurper
+
+# From this directory - start Next.js in dev mode
+cp example.env .env
+bun install
+bun run dev
 ```
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
@@ -148,6 +164,35 @@ ory/
 └── kratos/                # Kratos flow handling
 ```
 
+## Error Tracking with Sentry
+
+This application uses [Sentry](https://sentry.io) for error tracking and performance monitoring.
+
+### Configuration
+
+Sentry is configured across three environments:
+- **Client** (`instrumentation-client.ts`) - Browser error tracking with session replay
+- **Server** (`sentry.server.config.ts`) - Server-side error tracking
+- **Edge** (`sentry.edge.config.ts`) - Edge runtime error tracking
+
+### Features
+
+- **User Context**: Automatically tracks user information (ID, email, username) when authenticated
+- **Error Boundaries**: Route-specific error handling for `/auth` and `/settings` routes
+- **Session Replay**: Records user sessions on errors (production: 5% sample rate)
+- **Performance Monitoring**: Traces requests and transactions (production: 10% sample rate)
+- **Environment Tagging**: Separates development and production data
+
+### Production Optimization
+
+Sample rates are automatically adjusted based on environment:
+- **Development**: Full sampling (100% traces, 10% replays)
+- **Production**: Reduced sampling (10% traces, 5% replays, 100% error replays)
+
+### Tunnel Route
+
+Sentry requests are routed through `/monitoring` to bypass ad-blockers and respect CSP policies.
+
 ## Learn More
 
 To learn more about the technologies used:
@@ -163,3 +208,38 @@ To learn more about the technologies used:
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out the [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Docker Deployment
+
+### Building the Docker Image
+
+The project includes a production-ready multi-stage Dockerfile:
+
+```bash
+# Build the image
+docker build -t nextjs-ory-app .
+
+# Run standalone (requires Ory services)
+docker run -p 3000:3000 \
+  -e KRATOS_PUBLIC_BASE_URL=http://kratos:4433 \
+  -e HYDRA_PUBLIC_BASE_URL=http://hydra:4444 \
+  nextjs-ory-app
+```
+
+### Docker Compose
+
+The application is integrated into the main `docker-compose.yaml` as the `nextjs-app` service with:
+- Multi-stage build for optimized image size
+- Bun runtime for fast cold starts
+- Non-root user for security
+- Automatic service dependencies
+- Environment variables pre-configured
+
+### Environment Variables for Docker
+
+When running in Docker, use container hostnames for internal communication:
+- `KRATOS_PUBLIC_BASE_URL=http://kratos:4433`
+- `HYDRA_PUBLIC_BASE_URL=http://hydra:4444`
+- `HYDRA_ADMIN_URL=http://hydra:4445`
+
+See `.env.docker` for a complete example.
