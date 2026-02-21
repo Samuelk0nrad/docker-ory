@@ -90,7 +90,7 @@ Initialization does not need to be repeated in other files, it only needs to hap
 import * as Sentry from "@sentry/nextjs";
 
 Sentry.init({
-  dsn: "https://728b6e018df19c29fa01606036687b38@o4510901622865920.ingest.de.sentry.io/4510901628829776",
+  dsn: "https://x@x.ingest.de.sentry.io/x",
 
   enableLogs: true,
 });
@@ -100,7 +100,7 @@ Sentry.init({
 
 ```javascript
 Sentry.init({
-  dsn: "https://728b6e018df19c29fa01606036687b38@o4510901622865920.ingest.de.sentry.io/4510901628829776",
+  dsn: "https://x@x.ingest.de.sentry.io/x",
   integrations: [
     // send console.log, console.warn, and console.error calls as logs to Sentry
     Sentry.consoleLoggingIntegration({ levels: ["log", "warn", "error"] }),
