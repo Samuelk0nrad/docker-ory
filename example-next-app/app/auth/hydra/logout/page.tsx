@@ -1,6 +1,7 @@
 import { kratos } from "@/ory/kratos/kratos";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 
 interface LogoutPageProps {
   searchParams: Promise<{
@@ -38,6 +39,12 @@ export default async function HydraLogoutPage({
   }
 
   try {
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Starting Hydra logout page flow',
+      level: 'info',
+    });
+
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -54,6 +61,12 @@ export default async function HydraLogoutPage({
 
     await logoutReqRes.json(); // Get the logout request (for logging/debugging if needed)
 
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Fetched logout request',
+      level: 'info',
+    });
+
     // 2. Destroy the Kratos session
     const cookieStore = await cookies();
     const cookieHeader = cookieStore
@@ -62,6 +75,12 @@ export default async function HydraLogoutPage({
       .join("; ");
 
     try {
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'Destroying Kratos session',
+        level: 'info',
+      });
+
       // Create a logout flow
       const { data: logoutFlow } = await kratos.createBrowserLogoutFlow({
         cookie: cookieHeader,
@@ -74,12 +93,24 @@ export default async function HydraLogoutPage({
           cookie: cookieHeader,
         });
       }
+
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'Kratos session destroyed',
+        level: 'info',
+      });
     } catch (err) {
       console.warn("[hydra/logout] Failed to destroy Kratos session:", err);
+      Sentry.captureException(err);
       // Continue anyway — the Hydra logout should still proceed
     }
 
     // 3. Accept the Hydra logout request
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Accepting logout',
+      level: 'info',
+    });
     const acceptRes = await fetch(`${baseUrl}/api/hydra/logout`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -96,6 +127,7 @@ export default async function HydraLogoutPage({
     redirect(redirect_to);
   } catch (error) {
     console.error("[hydra/logout page] error:", error);
+    Sentry.captureException(error);
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6">
         <div className="text-center">
