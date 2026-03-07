@@ -23,7 +23,6 @@ export async function POST() {
 
         const cookieStore = await cookies();
 
-        // Clear all OAuth-related cookies
         const oauthCookies = [
           'oauth_access_token',
           'oauth_id_token',
@@ -32,13 +31,6 @@ export async function POST() {
           'oauth_state',
           'oauth_return_to',
         ];
-
-        for (const cookieName of oauthCookies) {
-          cookieStore.set(cookieName, '', {
-            path: '/',
-            maxAge: 0,
-          });
-        }
 
         // Clear Kratos session cookies (any cookie starting with ory_kratos_session)
         const kratosCookies = cookieStore
@@ -105,6 +97,14 @@ export async function POST() {
           }
         }
 
+        // Clear all OAuth-related cookies
+        for (const cookieName of oauthCookies) {
+          cookieStore.set(cookieName, '', {
+            path: '/',
+            maxAge: 0,
+          });
+        }
+
         // Build Hydra logout URL to terminate SSO session
         // TODO: move hydraPublicUrl and appUrl to a shared config file
         const hydraPublicUrl =
@@ -112,8 +112,7 @@ export async function POST() {
           process.env.NEXT_PUBLIC_HYDRA_PUBLIC_URL ??
           'http://localhost:5444';
         const appUrl =
-          process.env.NEXT_PUBLIC_APP_DOMAIN ??
-          'http://localhost:3000';
+          process.env.NEXT_PUBLIC_APP_DOMAIN ?? 'http://localhost:3000';
         const logoutUrl = `${hydraPublicUrl}/oauth2/sessions/logout?return_to=${encodeURIComponent(
           appUrl
         )}`;
