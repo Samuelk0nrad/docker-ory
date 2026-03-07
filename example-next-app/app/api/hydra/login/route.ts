@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hydraAdmin } from "@/ory/hydra/hydra";
+import * as Sentry from "@sentry/nextjs";
 
 /**
  * GET /api/hydra/login?login_challenge=...
@@ -17,18 +18,45 @@ export async function GET(req: NextRequest) {
     );
   }
 
-  try {
-    const { data } = await hydraAdmin.getOAuth2LoginRequest({
-      loginChallenge,
-    });
+  return await Sentry.startSpan(
+    { op: "hydra.admin", name: "getOAuth2LoginRequest" },
+    async (span) => {
+      try {
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Fetching Hydra login request",
+          level: "info",
+        });
 
-    return NextResponse.json(data);
-  } catch (err: unknown) {
-    console.error("[hydra/login] GET error:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to fetch login request";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+        const { data } = await hydraAdmin.getOAuth2LoginRequest({
+          loginChallenge,
+        });
+
+        span.setAttribute("hydra.skip", data.skip || false);
+        span.setAttribute("hydra.subject_present", !!data.subject);
+
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Hydra login request fetched",
+          level: "info",
+          data: { skip: data.skip },
+        });
+
+        return NextResponse.json(data);
+      } catch (err: unknown) {
+        console.error("[hydra/login] GET error:", err);
+        Sentry.captureException(err);
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Failed to fetch login request",
+          level: "error",
+        });
+        const message =
+          err instanceof Error ? err.message : "Failed to fetch login request";
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
+    }
+  );
 }
 
 /**
@@ -39,41 +67,66 @@ export async function GET(req: NextRequest) {
  * Body: { login_challenge: string; subject: string }
  */
 export async function POST(req: NextRequest) {
-  try {
-    const body = await req.json();
-    const { login_challenge, subject } = body as {
-      login_challenge?: string;
-      subject?: string;
-    };
+  return await Sentry.startSpan(
+    { op: "hydra.admin", name: "acceptOAuth2LoginRequest" },
+    async (span) => {
+      try {
+        const body = await req.json();
+        const { login_challenge, subject } = body as {
+          login_challenge?: string;
+          subject?: string;
+        };
 
-    if (!login_challenge) {
-      return NextResponse.json(
-        { error: "login_challenge is required" },
-        { status: 400 }
-      );
+        if (!login_challenge) {
+          return NextResponse.json(
+            { error: "login_challenge is required" },
+            { status: 400 }
+          );
+        }
+
+        if (!subject) {
+          return NextResponse.json(
+            { error: "subject is required" },
+            { status: 400 }
+          );
+        }
+
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Accepting Hydra login request",
+          level: "info",
+        });
+
+        span.setAttribute("hydra.remember", true);
+
+        const { data } = await hydraAdmin.acceptOAuth2LoginRequest({
+          loginChallenge: login_challenge,
+          acceptOAuth2LoginRequest: {
+            subject,
+            remember: true,
+            remember_for: 3600,
+          },
+        });
+
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Hydra login request accepted",
+          level: "info",
+        });
+
+        return NextResponse.json({ redirect_to: data.redirect_to });
+      } catch (err: unknown) {
+        console.error("[hydra/login] POST error:", err);
+        Sentry.captureException(err);
+        Sentry.addBreadcrumb({
+          category: "oauth.hydra",
+          message: "Failed to accept login request",
+          level: "error",
+        });
+        const message =
+          err instanceof Error ? err.message : "Failed to accept login request";
+        return NextResponse.json({ error: message }, { status: 500 });
+      }
     }
-
-    if (!subject) {
-      return NextResponse.json(
-        { error: "subject is required" },
-        { status: 400 }
-      );
-    }
-
-    const { data } = await hydraAdmin.acceptOAuth2LoginRequest({
-      loginChallenge: login_challenge,
-      acceptOAuth2LoginRequest: {
-        subject,
-        remember: true,
-        remember_for: 3600,
-      },
-    });
-
-    return NextResponse.json({ redirect_to: data.redirect_to });
-  } catch (err: unknown) {
-    console.error("[hydra/login] POST error:", err);
-    const message =
-      err instanceof Error ? err.message : "Failed to accept login request";
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  );
 }

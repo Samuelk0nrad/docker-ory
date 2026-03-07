@@ -1,6 +1,7 @@
 import { kratos } from "@/ory/kratos/kratos";
 import { cookies } from "next/headers";
 import { redirect, unstable_rethrow } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 
 interface ConsentPageProps {
   searchParams: Promise<{
@@ -41,6 +42,12 @@ export default async function HydraConsentPage({
   }
 
   try {
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Starting Hydra consent page flow',
+      level: 'info',
+    });
+
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
@@ -56,6 +63,15 @@ export default async function HydraConsentPage({
     }
 
     const consentRequest = await consentReqRes.json();
+
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Fetched consent request',
+      level: 'info',
+      data: {
+        requested_scopes_count: consentRequest.requested_scope?.length ?? 0,
+      },
+    });
 
     // 2. Get the Kratos session to embed user traits
     const cookieStore = await cookies();
@@ -76,15 +92,32 @@ export default async function HydraConsentPage({
         name: identity?.traits?.name ?? "",
         // Add any other traits you want in the JWT
       };
+
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'Extracted user claims from Kratos session',
+        level: 'info',
+      });
     } catch{
       console.warn("[hydra/consent] No Kratos session found, using subject:", consentRequest.subject);
       // Fall back to just the subject if no Kratos session
       userClaims = {
         sub: consentRequest.subject,
       };
+
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'No Kratos session, using subject only',
+        level: 'warning',
+      });
     }
 
     // 3. Accept consent with all requested scopes + audiences + user claims
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Accepting consent',
+      level: 'info',
+    });
     const acceptRes = await fetch(`${baseUrl}/api/hydra/consent`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -111,6 +144,8 @@ export default async function HydraConsentPage({
     
     // Re-throw Next.js internal errors (like redirect) so they are handled by the framework
     unstable_rethrow(error);
+    
+    Sentry.captureException(error);
         
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6">

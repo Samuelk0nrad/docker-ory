@@ -148,6 +148,35 @@ ory/
 └── kratos/                # Kratos flow handling
 ```
 
+## Error Tracking with Sentry
+
+This application uses [Sentry](https://sentry.io) for error tracking and performance monitoring.
+
+### Configuration
+
+Sentry is configured across three environments:
+- **Client** (`instrumentation-client.ts`) - Browser error tracking with session replay
+- **Server** (`sentry.server.config.ts`) - Server-side error tracking
+- **Edge** (`sentry.edge.config.ts`) - Edge runtime error tracking
+
+### Features
+
+- **User Context**: Automatically tracks user information (ID, email, username) when authenticated
+- **Error Boundaries**: Route-specific error handling for `/auth` and `/settings` routes
+- **Session Replay**: Records user sessions on errors (production: 5% sample rate)
+- **Performance Monitoring**: Traces requests and transactions (production: 10% sample rate)
+- **Environment Tagging**: Separates development and production data
+
+### Production Optimization
+
+Sample rates are automatically adjusted based on environment:
+- **Development**: Full sampling (100% traces, 10% replays)
+- **Production**: Reduced sampling (10% traces, 5% replays, 100% error replays)
+
+### Tunnel Route
+
+Sentry requests are routed through `/monitoring` to bypass ad-blockers and respect CSP policies.
+
 ## Learn More
 
 To learn more about the technologies used:

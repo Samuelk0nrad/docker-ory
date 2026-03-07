@@ -2,6 +2,7 @@ import { kratos } from "@/ory/kratos/kratos";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { unstable_rethrow } from "next/navigation";
+import * as Sentry from "@sentry/nextjs";
 
 interface LoginPageProps {
   searchParams: Promise<{
@@ -37,6 +38,12 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
   }
 
   try {
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Starting Hydra login page flow',
+      level: 'info',
+    });
+
     // 1. Fetch the Hydra login request
     const baseUrl =
       process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -54,8 +61,25 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     const loginRequest = await loginReqRes.json();
 
     console.log("[hydra/login page] fetched login request successfully, data:", loginRequest);
+
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Fetched login request',
+      level: 'info',
+      data: {
+        skip: loginRequest.skip,
+        has_subject: !!loginRequest.subject,
+      },
+    });
+
     // 2. If skip=true, immediately accept with the existing subject
     if (loginRequest.skip && loginRequest.subject) {
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'Skip=true, accepting login',
+        level: 'info',
+      });
+
       const acceptRes = await fetch(`${baseUrl}/api/hydra/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -91,8 +115,23 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
       ok = false;
     }
 
+    Sentry.addBreadcrumb({
+      category: 'oauth.hydra',
+      message: 'Checked Kratos session',
+      level: 'info',
+      data: {
+        has_session: ok,
+      },
+    });
+
     if (!ok || !kratosSession?.identity) {
       // No session → redirect to Kratos login with return_to
+      Sentry.addBreadcrumb({
+        category: 'oauth.hydra',
+        message: 'No Kratos session, redirecting to login',
+        level: 'info',
+      });
+
       const returnUrl = `/auth/hydra/login?login_challenge=${encodeURIComponent(login_challenge)}`;
       redirect(`/auth/login?return_to=${encodeURIComponent(returnUrl)}`);
     }
@@ -120,6 +159,7 @@ export default async function HydraLoginPage({ searchParams }: LoginPageProps) {
     unstable_rethrow(error);
 
     console.error("[hydra/login page] error:", error);
+    Sentry.captureException(error);
     return (
       <div className="flex min-h-svh w-full items-center justify-center p-6">
         <div className="text-center">
