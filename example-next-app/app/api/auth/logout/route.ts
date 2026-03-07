@@ -32,27 +32,6 @@ export async function POST() {
           'oauth_return_to',
         ];
 
-        // Clear Kratos session cookies (any cookie starting with ory_kratos_session)
-        const kratosCookies = cookieStore
-          .getAll()
-          .filter((cookie) => cookie.name.startsWith('ory_kratos_session'));
-        for (const cookie of kratosCookies) {
-          cookieStore.set(cookie.name, '', {
-            path: '/',
-            maxAge: 0,
-          });
-        }
-
-        Sentry.addBreadcrumb({
-          category: 'auth',
-          message: 'Cleared OAuth and Kratos cookies',
-          level: 'info',
-          data: {
-            oauth_cookies_count: oauthCookies.length,
-            kratos_cookies_count: kratosCookies.length,
-          },
-        });
-
         // Optional: Call Hydra's revocation endpoint to invalidate tokens
         // This is a best practice for security but not required for client-side logout
         const accessToken = cookieStore.get('oauth_access_token')?.value;
@@ -97,13 +76,33 @@ export async function POST() {
           }
         }
 
-        // Clear all OAuth-related cookies
         for (const cookieName of oauthCookies) {
           cookieStore.set(cookieName, '', {
             path: '/',
             maxAge: 0,
           });
         }
+
+        // Clear Kratos session cookies (any cookie starting with ory_kratos_session)
+        const kratosCookies = cookieStore
+          .getAll()
+          .filter((cookie) => cookie.name.startsWith('ory_kratos_session'));
+        for (const cookie of kratosCookies) {
+          cookieStore.set(cookie.name, '', {
+            path: '/',
+            maxAge: 0,
+          });
+        }
+
+        Sentry.addBreadcrumb({
+          category: 'auth',
+          message: 'Cleared OAuth and Kratos cookies',
+          level: 'info',
+          data: {
+            oauth_cookies_count: oauthCookies.length,
+            kratos_cookies_count: kratosCookies.length,
+          },
+        });
 
         // Build Hydra logout URL to terminate SSO session
         // TODO: move hydraPublicUrl and appUrl to a shared config file
