@@ -278,3 +278,4 @@ Required environment variables (see [example.env](./example.env)):
 ---
 - [ ] fix test setup
 - [ ] add health checks to containers for testing
+- [ ] route sentry through proxy
