@@ -214,7 +214,7 @@ services:
       ory-kratos:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:80/ || exit 1"]
+      test: ["CMD-SHELL", "curl -f -H 'Host: auth.moorph.local' http://localhost:80/ || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 3
