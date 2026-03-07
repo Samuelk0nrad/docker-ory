@@ -64,6 +64,7 @@ To enable automatic source map uploads during the build:
 - Captures router transitions via `onRouterTransitionStart`
 
 **Configuration**:
+
 - `tracesSampleRate: 1` - Traces all transactions (adjust in production)
 - `replaysSessionSampleRate: 0.1` - Records 10% of sessions
 - `replaysOnErrorSampleRate: 1.0` - Records 100% of error replays
@@ -79,6 +80,7 @@ To enable automatic source map uploads during the build:
 - Sends full request context (headers, user data) for debugging
 
 **Configuration**:
+
 - `tracesSampleRate: 1` - Traces all transactions (adjust in production)
 - `sendDefaultPii: true` - Includes request user context
 
@@ -91,6 +93,7 @@ To enable automatic source map uploads during the build:
 - Works with edge routes and middleware
 
 **Configuration**:
+
 - Same as server-side config
 - Uses `process.env.NEXT_RUNTIME === "edge"` for conditional registration
 
@@ -124,16 +127,16 @@ The [Sentry Webpack plugin](https://docs.sentry.io/platforms/javascript/guides/n
 export default withSentryConfig(nextConfig, {
   org: process.env.SENTRY_ORG || "moorph",
   project: process.env.SENTRY_PROJECT || "auth-system",
-  
+
   // Tunnel route for ad-blocker circumvention
   tunnelRoute: "/monitoring",
-  
+
   // Source map upload settings
   widenClientFileUpload: true,
-  
+
   // Vercel Cron monitoring
   automaticVercelMonitors: true,
-  
+
   // Tree-shaking for bundle optimization
   treeshake: {
     removeDebugLogging: true,
@@ -150,6 +153,7 @@ During the build (`bun run build`):
 3. When errors occur in production, Sentry displays original source code instead of minified code
 
 **Requirements**:
+
 - `SENTRY_AUTH_TOKEN` must be set (generate at Sentry dashboard)
 - `SENTRY_ORG` and `SENTRY_PROJECT` must match your Sentry project
 - Build will fail if upload fails and token is invalid
@@ -194,13 +198,19 @@ export default function GlobalError({
 
 ### Client-Side Error
 
-1. Visit: http://localhost:3000/sentry-example-page
+1. Visit: https://auth.moorph.local/sentry-example-page
+
+- Local Next.js dev alternative: http://localhost:3000/sentry-example-page
+
 2. Click "Throw error" button
 3. Check Sentry dashboard for the error
 
 ### Server-Side Error
 
-1. Visit: http://localhost:3000/api/sentry-example-api
+1. Visit: https://auth.moorph.local/api/sentry-example-api
+
+- Local Next.js dev alternative: http://localhost:3000/api/sentry-example-api
+
 2. Check Sentry dashboard for the server error
 
 ### Performance Monitoring
@@ -234,6 +244,7 @@ SENTRY_AUTH_TOKEN=your_token
 ```
 
 **Recommended adjustments**:
+
 - Reduce `tracesSampleRate` to 0.1-0.2 (10-20%) to avoid quota limits
 - Set `replaysSessionSampleRate: 0.05` (5% of sessions)
 - Use [Sentry Quota Management](https://docs.sentry.io/product/accounts/quotas/) to control costs
@@ -243,6 +254,7 @@ SENTRY_AUTH_TOKEN=your_token
 ### PII (Personally Identifiable Information)
 
 With `sendDefaultPii: true`, Sentry captures:
+
 - User ID/email (from session context)
 - Request headers
 - URL query parameters
@@ -255,6 +267,7 @@ With `sendDefaultPii: true`, Sentry captures:
 3. **Dashboard**: Use Sentry Data Scrubbing rules
 
 Example:
+
 ```typescript
 Sentry.init({
   dsn: "...",

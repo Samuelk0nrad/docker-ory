@@ -1,4 +1,4 @@
-import { kratos } from "@/ory/kratos/kratos";
+import { kratosServer } from "@/ory/kratos/kratos.server";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import * as Sentry from "@sentry/nextjs";
@@ -46,7 +46,7 @@ export default async function HydraLogoutPage({
     });
 
     const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+      process.env.NEXT_INTERNAL_URL ?? "http://localhost:3000";
 
     // 1. Fetch the Hydra logout request
     const logoutReqUrl = new URL(`${baseUrl}/api/hydra/logout`);
@@ -82,13 +82,13 @@ export default async function HydraLogoutPage({
       });
 
       // Create a logout flow
-      const { data: logoutFlow } = await kratos.createBrowserLogoutFlow({
+      const { data: logoutFlow } = await kratosServer.createBrowserLogoutFlow({
         cookie: cookieHeader,
       });
 
       // Execute the logout (invalidates the Kratos session)
       if (logoutFlow.logout_token) {
-        await kratos.updateLogoutFlow({
+        await kratosServer.updateLogoutFlow({
           token: logoutFlow.logout_token,
           cookie: cookieHeader,
         });

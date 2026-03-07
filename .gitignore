@@ -1,1 +1,5 @@
 .env
+
+# SSL certificates (generate locally with mkcert — see README for instructions)
+proxy-config/cert/*.pem
+proxy-config/cert/*.key

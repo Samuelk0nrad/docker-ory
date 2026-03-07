@@ -117,6 +117,12 @@ export async function POST(req: NextRequest) {
           },
         });
 
+        console.log(
+          '[hydra/consent route] consent accepted successfully, redirecting',
+          "accept response data:",
+          data
+        );
+
         Sentry.addBreadcrumb({
           category: "oauth.hydra",
           message: "Hydra consent request accepted",

@@ -4,7 +4,7 @@ serve:
     cors:
       enabled: true
       allowed_origins:
-        - http://localhost:3000
+        - https://auth.moorph.local
       allowed_methods:
         - POST
         - GET
@@ -24,10 +24,10 @@ serve:
 
 urls:
   self:
-    issuer: http://localhost:5444/
-  consent: http://localhost:3000/auth/hydra/consent
-  login: http://localhost:3000/auth/hydra/login
-  logout: http://localhost:3000/auth/hydra/logout
+    issuer: https://auth.moorph.local/api/.ory/hydra/
+  consent: https://auth.moorph.local/auth/hydra/consent
+  login: https://auth.moorph.local/auth/hydra/login
+  logout: https://auth.moorph.local/auth/hydra/logout
 
 oidc:
   subject_identifiers:
